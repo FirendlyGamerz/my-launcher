@@ -792,6 +792,51 @@ applicationForm.addEventListener("submit", async (event) => {
 });
 
 
+async function loadMissingWebIcons() {
+    let changed = false;
+
+    for (const item of launcherItems) {
+        if (
+            (item.type !== "website" && item.type !== "webapp") ||
+            item.favicon
+        ) {
+            continue;
+        }
+
+        try {
+            const icon = await window.launcherAPI.fetchFavicon(item.target);
+
+            if (icon) {
+                item.favicon = icon;
+                changed = true;
+            }
+        } catch (error) {
+            console.error(
+                "Failed to load web icon:",
+                error
+            );
+        }
+    }
+
+    if (changed) {
+        const saved = await saveLauncherItems(launcherItems);
+
+        if (saved) {
+            renderItems();
+        }
+    }
+}
+
+
+function hasMissingWebIcons() {
+    return launcherItems.some(
+        (item) =>
+            (item.type === "website" || item.type === "webapp") &&
+            !item.favicon
+    );
+}
+
+
 /* ==============================
    Create Card & Icon Integration
 ================================= */
@@ -1336,6 +1381,20 @@ async function initializeLauncher() {
     renderItems();
 
     await loadMissingApplicationIcons();
+    await loadMissingWebIcons();
 }
+
+window.addEventListener("online", async () => {
+    await loadMissingWebIcons();
+});
+
+setInterval(async () => {
+    if (
+        navigator.onLine &&
+        hasMissingWebIcons()
+    ) {
+        await loadMissingWebIcons();
+    }
+}, 30000);
 
 initializeLauncher();
