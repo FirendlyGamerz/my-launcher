@@ -2,12 +2,21 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>My Launcher</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
 </head>
 
 <body>
@@ -15,43 +24,75 @@
     <div class="app">
 
         <!-- Sidebar -->
+
         <aside class="sidebar">
 
             <div class="sidebar-header">
+
                 <h1>My Launcher</h1>
+
             </div>
+
 
             <nav class="sidebar-nav">
 
-                <a href="#" class="nav-item active">
-                    <span>Home</span>
+                <a
+                    href="#"
+                    class="nav-item active"
+                    data-section="home"
+                >
+                    Home
                 </a>
 
-                <a href="#" class="nav-item">
-                    <span>Favorites</span>
+                <a
+                    href="#"
+                    class="nav-item"
+                    data-section="favorites"
+                >
+                    Favorites
                 </a>
 
-                <a href="#" class="nav-item">
-                    <span>Websites</span>
+                <a
+                    href="#"
+                    class="nav-item"
+                    data-section="websites"
+                >
+                    Websites
                 </a>
 
-                <a href="#" class="nav-item">
-                    <span>Web Apps</span>
+                <a
+                    href="#"
+                    class="nav-item"
+                    data-section="webapps"
+                >
+                    Web Apps
                 </a>
 
-                <a href="#" class="nav-item">
-                    <span>Applications</span>
+                <a
+                    href="#"
+                    class="nav-item"
+                    data-section="applications"
+                >
+                    Applications
                 </a>
 
-                <a href="#" class="nav-item">
-                    <span>Settings</span>
+                <a
+                    href="#"
+                    class="nav-item"
+                    data-section="settings"
+                >
+                    Settings
                 </a>
 
             </nav>
 
+
             <div class="sidebar-bottom">
 
-                <button class="add-button" id="add-button">
+                <button
+                    class="add-button"
+                    id="add-button"
+                >
                     + Add
                 </button>
 
@@ -61,134 +102,294 @@
 
 
         <!-- Main Content -->
+
         <main class="main-content">
 
             <!-- Top Bar -->
+
             <header class="top-bar">
 
                 <div class="search-container">
 
-                    <input type="search" id="search-input" placeholder="Search...">
+                    <input
+                        type="search"
+                        id="search-input"
+                        placeholder="Search..."
+                    >
 
                 </div>
 
             </header>
 
 
-            <!-- Dashboard -->
-            <section class="dashboard">
+            <!-- Home -->
 
-                <div class="dashboard-header">
+            <section
+                class="page-section active-page"
+                id="home-section"
+            >
 
-                    <h2>Home</h2>
+                <div class="dashboard">
 
-                    <p>Your launcher dashboard</p>
+                    <div class="dashboard-header">
+
+                        <h2>Home</h2>
+
+                        <p>Your launcher dashboard</p>
+
+                    </div>
+
+
+                    <!-- Websites -->
+
+                    <section class="launcher-section">
+
+                        <div class="section-header">
+
+                            <h3>Websites</h3>
+
+                        </div>
+
+                        <div
+                            class="app-grid"
+                            id="home-websites-grid"
+                        ></div>
+
+                    </section>
+
+
+                    <!-- Web Apps -->
+
+                    <section class="launcher-section">
+
+                        <div class="section-header">
+
+                            <h3>Web Apps</h3>
+
+                        </div>
+
+                        <div
+                            class="app-grid"
+                            id="home-webapps-grid"
+                        ></div>
+
+                    </section>
+
+
+                    <!-- Applications -->
+
+                    <section class="launcher-section">
+
+                        <div class="section-header">
+
+                            <h3>Applications</h3>
+
+                        </div>
+
+                        <div
+                            class="app-grid"
+                            id="home-applications-grid"
+                        ></div>
+
+                    </section>
 
                 </div>
 
-
-                <!-- Favorites -->
-                <section class="launcher-section">
-
-                    <div class="section-header">
-
-                        <h3>Favorites</h3>
-
-                    </div>
-
-                    <div class="app-grid">
-
-                        <!-- Launcher cards will be added here later -->
-
-                    </div>
-
-                </section>
+            </section>
 
 
-                <!-- Websites -->
-                <section class="launcher-section">
+            <!-- Favorites -->
 
-                    <div class="section-header">
+            <section
+                class="page-section"
+                id="favorites-section"
+            >
 
-                        <h3>Websites</h3>
+                <div class="dashboard">
+
+                    <div class="dashboard-header">
+
+                        <h2>Favorites</h2>
+
+                        <p>Your favorite launcher items</p>
 
                     </div>
 
-                    <div class="app-grid">
+                    <div
+                        class="app-grid"
+                        id="favorites-grid"
+                    ></div>
 
-                        <!-- Website cards will be added here later -->
+                </div>
 
-                    </div>
-
-                </section>
-
-
-                <!-- Web Apps -->
-                <section class="launcher-section">
-
-                    <div class="section-header">
-
-                        <h3>Web Apps</h3>
-
-                    </div>
-
-                    <div class="app-grid">
-
-                        <!-- Web app cards will be added here later -->
-
-                    </div>
-
-                </section>
+            </section>
 
 
-                <!-- Windows Applications -->
-                <section class="launcher-section">
+            <!-- Websites -->
 
-                    <div class="section-header">
+            <section
+                class="page-section"
+                id="websites-section"
+            >
 
-                        <h3>Applications</h3>
+                <div class="dashboard">
+
+                    <div class="dashboard-header">
+
+                        <h2>Websites</h2>
+
+                        <p>Your saved websites</p>
 
                     </div>
 
-                    <div class="app-grid">
+                    <div
+                        class="app-grid"
+                        id="websites-grid"
+                    ></div>
 
-                        <!-- Windows application cards will be added here later -->
+                </div>
+
+            </section>
+
+
+            <!-- Web Apps -->
+
+            <section
+                class="page-section"
+                id="webapps-section"
+            >
+
+                <div class="dashboard">
+
+                    <div class="dashboard-header">
+
+                        <h2>Web Apps</h2>
+
+                        <p>Your installed web apps</p>
 
                     </div>
 
-                </section>
+                    <div
+                        class="app-grid"
+                        id="webapps-grid"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Applications -->
+
+            <section
+                class="page-section"
+                id="applications-section"
+            >
+
+                <div class="dashboard">
+
+                    <div class="dashboard-header">
+
+                        <h2>Applications</h2>
+
+                        <p>Your Windows applications</p>
+
+                    </div>
+
+                    <div
+                        class="app-grid"
+                        id="applications-grid"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Settings -->
+
+            <section
+                class="page-section"
+                id="settings-section"
+            >
+
+                <div class="dashboard">
+
+                    <div class="dashboard-header">
+
+                        <h2>Settings</h2>
+
+                        <p>Launcher settings</p>
+
+                    </div>
+
+                </div>
 
             </section>
 
         </main>
-        <div class="add-dialog" id="add-dialog">
+
+
+        <!-- Add / Edit Dialog -->
+
+        <div
+            class="add-dialog"
+            id="add-dialog"
+        >
 
             <div class="dialog-box">
 
                 <div class="dialog-header">
+
                     <h3>Add Item</h3>
-                    <button class="close-button" id="close-dialog">&times;</button>
+
+                    <button
+                        class="close-button"
+                        id="close-dialog"
+                    >
+                        &times;
+                    </button>
+
                 </div>
 
+
                 <div class="dialog-content">
+
                     <p>Choose what you want to add.</p>
+
 
                     <div class="item-type-selection">
 
-                        <button class="item-type-button" id="website-button">
+                        <button
+                            class="item-type-button"
+                            id="website-button"
+                        >
                             Website
                         </button>
 
-                        <button class="item-type-button">
+                        <button
+                            class="item-type-button"
+                            id="webapp-button"
+                        >
                             Web App
                         </button>
 
-                        <button class="item-type-button">
+                        <button
+                            class="item-type-button"
+                            id="application-button"
+                        >
                             Windows Application
                         </button>
 
                     </div>
-                    <form class="item-form" id="website-form">
+
+
+                    <!-- Website Form -->
+
+                    <form
+                        class="item-form"
+                        id="website-form"
+                    >
 
                         <div class="form-group">
 
@@ -196,7 +397,12 @@
                                 Name
                             </label>
 
-                            <input type="text" id="website-name" placeholder="e.g. YouTube" required>
+                            <input
+                                type="text"
+                                id="website-name"
+                                placeholder="e.g. YouTube"
+                                required
+                            >
 
                         </div>
 
@@ -207,17 +413,27 @@
                                 URL
                             </label>
 
-                            <input type="url" id="website-url" placeholder="https://example.com" required>
+                            <input
+                                type="text"
+                                id="website-url"
+                                placeholder="e.g. youtube.com"
+                                required
+                            >
 
                         </div>
 
 
-                        <div class="form-group">
+                        <div class="form-group favorite-field">
 
                             <label>
-                                <input type="checkbox" id="website-favorite">
+
+                                <input
+                                    type="checkbox"
+                                    id="website-favorite"
+                                >
 
                                 Add to Favorites
+
                             </label>
 
                         </div>
@@ -225,11 +441,92 @@
 
                         <div class="form-actions">
 
-                            <button type="button" id="cancel-website">
-                                Cancel
+                            <button
+                                type="submit"
+                                id="save-website"
+                            >
+                                Save
                             </button>
 
-                            <button type="submit" id="save-website">
+                        </div>
+
+                    </form>
+
+
+                    <!-- Windows Application Form -->
+
+                    <form
+                        class="item-form"
+                        id="application-form"
+                    >
+
+                        <div class="form-group">
+
+                            <label for="application-name">
+                                Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="application-name"
+                                placeholder="e.g. Visual Studio Code"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="application-path">
+                                Application Path
+                            </label>
+
+                            <div class="path-input-row">
+
+                                <input
+                                    type="text"
+                                    id="application-path"
+                                    placeholder="Select an .exe file"
+                                    readonly
+                                    required
+                                >
+
+                                <button
+                                    type="button"
+                                    class="browse-button"
+                                    id="browse-application"
+                                >
+                                    Browse
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group favorite-field">
+
+                            <label>
+
+                                <input
+                                    type="checkbox"
+                                    id="application-favorite"
+                                >
+
+                                Add to Favorites
+
+                            </label>
+
+                        </div>
+
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                id="save-application"
+                            >
                                 Save
                             </button>
 
@@ -243,11 +540,152 @@
 
         </div>
 
+
+        <!-- Message Dialog -->
+
+        <div
+            class="message-dialog"
+            id="message-dialog"
+        >
+
+            <div class="message-box">
+
+                <div
+                    class="message-icon"
+                    id="message-icon"
+                >
+                    !
+                </div>
+
+                <div class="message-content">
+
+                    <h3 id="message-title">
+                        Error
+                    </h3>
+
+                    <p id="message-text">
+                        Something went wrong.
+                    </p>
+
+                </div>
+
+                <button
+                    class="message-close"
+                    id="message-close"
+                >
+                    OK
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Delete Confirmation Dialog -->
+
+        <div
+            class="delete-dialog"
+            id="delete-dialog"
+        >
+
+            <div class="delete-box">
+
+                <div class="delete-icon">
+                    !
+                </div>
+
+
+                <div class="delete-content">
+
+                    <h3>
+                        Delete Item?
+                    </h3>
+
+                    <p id="delete-message">
+                        Are you sure you want to delete this item?
+                    </p>
+
+                </div>
+
+
+                <div class="delete-actions">
+
+                    <button
+                        type="button"
+                        id="delete-cancel"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        id="delete-confirm"
+                    >
+                        Delete
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Context Menu -->
+
+        <div
+            class="context-menu"
+            id="context-menu"
+        >
+
+            <button
+                class="context-menu-item"
+                data-action="open"
+            >
+                <span>Open</span>
+            </button>
+
+            <button
+                class="context-menu-item"
+                data-action="edit"
+            >
+                <span>Edit</span>
+            </button>
+
+            <div class="context-menu-separator"></div>
+
+            <button
+                class="context-menu-item"
+                data-action="favorite"
+                id="context-favorite"
+            >
+                <span>Add to Favorites</span>
+            </button>
+
+            <button
+                class="context-menu-item"
+                data-action="copy"
+                id="context-copy"
+            >
+                <span>Copy URL</span>
+            </button>
+
+            <div class="context-menu-separator"></div>
+
+            <button
+                class="context-menu-item danger"
+                data-action="delete"
+            >
+                <span>Delete</span>
+            </button>
+
+        </div>
+
+
+        <script src="js/storage.js"></script>
+        <script src="js/app.js"></script>
+
     </div>
-
-
-    <script src="js/storage.js"></script>
-    <script src="js/app.js"></script>
 
 </body>
 
