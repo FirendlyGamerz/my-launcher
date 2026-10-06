@@ -747,25 +747,6 @@ applicationForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    if (editingItemId !== null) {
-        const item = launcherItems.find((entry) => entry.id === editingItemId);
-        if (!item) {
-            showMessage("Update Failed", "The selected application could not be found.");
-            return;
-        }
-        item.name = name;
-        item.target = applicationPath;
-        item.favorite = favorite;
-    } else {
-        launcherItems.push({
-            id: Date.now(),
-            name: name,
-            type: "application",
-            target: applicationPath,
-            favorite: favorite
-        });
-    }
-
     let applicationIcon = null;
 
     try {
