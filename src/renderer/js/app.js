@@ -298,6 +298,7 @@ const deleteConfirm = document.querySelector("#delete-confirm");
 const contextMenu = document.querySelector("#context-menu");
 const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
+const contextRepair = document.querySelector("#context-repair");
 const searchInput = document.querySelector("#search-input");
 
 
@@ -976,6 +977,101 @@ function renderItems() {
 
 
 /* ==============================
+   Locate / Repair Missing Application
+================================= */
+
+async function repairApplication(item) {
+    if (!item || item.type !== "application") {
+        return;
+    }
+
+    let selection;
+
+    try {
+        selection = await window.launcherAPI.selectApplication();
+    } catch {
+        showMessage("Locate Failed", "The application file could not be selected.");
+        return;
+    }
+
+    if (!selection || selection.canceled || !selection.path) {
+        return;
+    }
+
+    const newPath = selection.path.trim();
+
+    let applicationCheck;
+
+    try {
+        applicationCheck =
+            await window.launcherAPI.checkApplication(newPath);
+    } catch {
+        applicationCheck = {
+            valid: false,
+            exists: false
+        };
+    }
+
+    if (
+        !applicationCheck ||
+        !applicationCheck.valid ||
+        !applicationCheck.exists
+    ) {
+        showMessage(
+            "Invalid Application",
+            "Please select a valid Windows executable (.exe) file."
+        );
+        return;
+    }
+
+    const duplicateApplication =
+        findDuplicateApplication(newPath, item.id);
+
+    if (duplicateApplication) {
+        showMessage(
+            "Already Added",
+            `"${duplicateApplication.name}" is already saved with this application path.`
+        );
+        return;
+    }
+
+    let applicationIcon = null;
+
+    try {
+        applicationIcon =
+            await window.launcherAPI.fetchAppIcon(newPath);
+    } catch (error) {
+        console.error(
+            "Failed to fetch repaired application icon:",
+            error
+        );
+    }
+
+    item.target = newPath;
+    item.missing = false;
+    item.favicon = applicationIcon || null;
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        item.missing = true;
+        showMessage(
+            "Repair Failed",
+            "The repaired application could not be saved."
+        );
+        return;
+    }
+
+    renderItems();
+
+    showMessage(
+        "Application Repaired",
+        `"${item.name}" has been repaired successfully.`
+    );
+}
+
+
+/* ==============================
    Context Menu & Actions
 ================================= */
 
@@ -984,9 +1080,33 @@ function openContextMenu(item, x, y) {
     contextFavorite.textContent = item.favorite ? "Remove from Favorites" : "Add to Favorites";
     contextCopy.textContent = item.type === "application" ? "Copy Path" : "Copy URL";
 
+    if (contextRepair) {
+        contextRepair.style.display =
+            item.type === "application" && item.missing
+                ? "flex"
+                : "none";
+    }
+
     contextMenu.style.display = "block";
-    contextMenu.style.left = `${x}px`;
-    contextMenu.style.top = `${y}px`;
+
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const edgePadding = 8;
+
+    const left = Math.min(
+        x,
+        Math.max(edgePadding, viewportWidth - menuWidth - edgePadding)
+    );
+
+    const top = Math.min(
+        y,
+        Math.max(edgePadding, viewportHeight - menuHeight - edgePadding)
+    );
+
+    contextMenu.style.left = left + "px";
+    contextMenu.style.top = top + "px";
 }
 
 function closeContextMenu() {
@@ -1018,6 +1138,8 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
             await openItem(item);
         } else if (action === "edit") {
             editItem(item);
+        } else if (action === "repair") {
+            await repairApplication(item);
         } else if (action === "favorite") {
             item.favorite = !item.favorite;
             await saveLauncherItems(launcherItems);
