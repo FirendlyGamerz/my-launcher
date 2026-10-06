@@ -61,6 +61,12 @@ contextBridge.exposeInMainWorld(
         fetchFavicon: (targetUrl) => ipcRenderer.invoke(
             'fetch-favicon',
             targetUrl
+        ),
+
+
+        fetchAppIcon: (applicationPath) => ipcRenderer.invoke(
+            'fetch-app-icon',
+            applicationPath
         )
 
     }
