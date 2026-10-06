@@ -888,3 +888,42 @@ body {
 #application-path {
     cursor: default;
 }
+
+
+/* ==============================
+   Favorite Star
+================================= */
+
+.app-card {
+    position: relative;
+}
+
+.card-favorite-star {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+
+    color: #f5c542;
+
+    font-size: 17px;
+    line-height: 1;
+}
+
+
+/* ==============================
+   Form Actions
+================================= */
+
+.form-actions {
+    gap: 8px;
+}
+
+.form-actions .form-cancel {
+    background: #141414;
+    color: #aaaaaa;
+}
+
+.form-actions .form-cancel:hover {
+    background: #202020;
+    color: #ffffff;
+}
