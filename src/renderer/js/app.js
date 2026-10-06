@@ -87,6 +87,15 @@ const websiteButton =
 const websiteForm =
     document.querySelector("#website-form");
 
+const webappButton =
+    document.querySelector("#webapp-button");
+
+const webappForm =
+    document.querySelector("#webapp-form");
+
+const saveWebappButton =
+    document.querySelector("#save-webapp");
+
 const saveWebsiteButton =
     document.querySelector("#save-website");
 
@@ -275,10 +284,14 @@ function openAddDialog() {
     websiteForm.style.display =
         "none";
 
+    webappForm.style.display =
+        "none";
+
     applicationForm.style.display =
         "none";
 
     websiteForm.reset();
+    webappForm.reset();
     applicationForm.reset();
 
 
@@ -366,6 +379,27 @@ websiteButton.addEventListener(
     }
 );
 
+
+
+
+webappButton.addEventListener(
+    "click",
+    () => {
+
+        itemTypeSelection.style.display =
+            "none";
+
+        websiteForm.style.display =
+            "none";
+
+        webappForm.style.display =
+            "block";
+
+        applicationForm.style.display =
+            "none";
+
+    }
+);
 
 applicationButton.addEventListener(
     "click",
@@ -882,6 +916,289 @@ websiteForm.addEventListener(
 );
 
 
+
+
+/* ==============================
+   Web App Form Submit
+================================= */
+
+function findDuplicateWebApp(
+    url,
+    ignoredItemId = null
+) {
+
+    const newKey =
+        getWebsiteKey(url);
+
+    if (!newKey) {
+        return null;
+    }
+
+    return launcherItems.find(
+        (item) => {
+
+            if (
+                item.type !==
+                "webapp"
+            ) {
+                return false;
+            }
+
+            if (
+                ignoredItemId !== null &&
+                item.id ===
+                ignoredItemId
+            ) {
+                return false;
+            }
+
+            return (
+                getWebsiteKey(item.target) ===
+                newKey
+            );
+
+        }
+    ) || null;
+
+}
+
+
+webappForm.addEventListener(
+    "submit",
+    async (event) => {
+
+        event.preventDefault();
+
+        const name =
+            document.querySelector(
+                "#webapp-name"
+            ).value.trim();
+
+        const rawUrl =
+            document.querySelector(
+                "#webapp-url"
+            ).value;
+
+        const favorite =
+            document.querySelector(
+                "#webapp-favorite"
+            ).checked;
+
+        if (!name) {
+
+            showMessage(
+                "Name Required",
+                "Please enter a name for this web app."
+            );
+
+            return;
+
+        }
+
+        const normalizedUrl =
+            normalizeWebsiteUrl(
+                rawUrl
+            );
+
+        if (!normalizedUrl) {
+
+            showMessage(
+                "Invalid URL",
+                "Please enter a valid website address, such as youtube.com."
+            );
+
+            return;
+
+        }
+
+        const duplicate =
+            findDuplicateWebApp(
+                normalizedUrl,
+                editingItemId
+            );
+
+        if (duplicate) {
+
+            showMessage(
+                "Already Added",
+                `"${duplicate.name}" is already saved with this web app address.`
+            );
+
+            return;
+
+        }
+
+        saveWebappButton.disabled =
+            true;
+
+        saveWebappButton.textContent =
+            "Checking...";
+
+        let websiteCheck;
+
+        try {
+
+            websiteCheck =
+                await window.launcherAPI
+                    .checkWebsite(
+                        normalizedUrl
+                    );
+
+        }
+
+        catch {
+
+            websiteCheck = {
+                valid: false,
+                available: false
+            };
+
+        }
+
+        saveWebappButton.disabled =
+            false;
+
+        saveWebappButton.textContent =
+            editingItemId !== null
+                ? "Update"
+                : "Save";
+
+        if (
+            !websiteCheck ||
+            !websiteCheck.valid
+        ) {
+
+            showMessage(
+                "Invalid URL",
+                "The web app address is not valid."
+            );
+
+            return;
+
+        }
+
+        if (
+            !websiteCheck.available
+        ) {
+
+            showMessage(
+                "Website Not Reachable",
+                "This web app address could not be reached right now. Please check the address and try again."
+            );
+
+            return;
+
+        }
+
+        const finalDuplicate =
+            findDuplicateWebApp(
+                websiteCheck.url,
+                editingItemId
+            );
+
+        if (finalDuplicate) {
+
+            showMessage(
+                "Already Added",
+                `"${finalDuplicate.name}" is already saved with this web app address.`
+            );
+
+            return;
+
+        }
+
+        if (editingItemId !== null) {
+
+            const item =
+                launcherItems.find(
+                    (entry) =>
+                        entry.id ===
+                        editingItemId
+                );
+
+            if (!item) {
+
+                showMessage(
+                    "Update Failed",
+                    "The selected web app could not be found."
+                );
+
+                return;
+
+            }
+
+            item.name =
+                name;
+
+            item.target =
+                websiteCheck.url;
+
+            item.favorite =
+                favorite;
+
+        }
+
+        else {
+
+            launcherItems.push({
+
+                id: Date.now(),
+
+                name: name,
+
+                type: "webapp",
+
+                target:
+                    websiteCheck.url,
+
+                favorite:
+                    favorite
+
+            });
+
+        }
+
+        const saved =
+            await saveLauncherItems(
+                launcherItems
+            );
+
+        if (!saved) {
+
+            showMessage(
+                "Save Failed",
+                "The web app could not be saved."
+            );
+
+            return;
+
+        }
+
+        renderItems();
+
+        editingItemId = null;
+
+        webappForm.reset();
+
+        addDialog.style.display =
+            "none";
+
+        itemTypeSelection.style.display =
+            "block";
+
+        websiteForm.style.display =
+            "none";
+
+        webappForm.style.display =
+            "none";
+
+        applicationForm.style.display =
+            "none";
+
+    }
+);
+
+
 /* ==============================
    Windows Application Form
 ================================= */
@@ -1296,6 +1613,38 @@ async function openItem(item) {
             showMessage(
                 "Open Failed",
                 "The website could not be opened."
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    if (
+        item.type ===
+        "webapp"
+    ) {
+
+        const result =
+            await window.launcherAPI
+                .openWebApp(
+                    item.id,
+                    item.name,
+                    item.target
+                );
+
+        if (
+            !result ||
+            !result.success
+        ) {
+
+            showMessage(
+                "Web App Not Available",
+                result && result.message
+                    ? result.message
+                    : "The web app could not be opened."
             );
 
         }
@@ -1766,6 +2115,51 @@ function editItem(item) {
 
     if (
         item.type ===
+        "webapp"
+    ) {
+
+        websiteForm.style.display =
+            "none";
+
+        webappForm.style.display =
+            "block";
+
+        applicationForm.style.display =
+            "none";
+
+        document.querySelector(
+            "#webapp-name"
+        ).value =
+            item.name;
+
+        document.querySelector(
+            "#webapp-url"
+        ).value =
+            item.target;
+
+        document.querySelector(
+            "#webapp-favorite"
+        ).checked =
+            Boolean(item.favorite);
+
+        document.querySelector(
+            ".dialog-header h3"
+        ).textContent =
+            "Edit Web App";
+
+        saveWebappButton.textContent =
+            "Update";
+
+        addDialog.style.display =
+            "flex";
+
+        return;
+
+    }
+
+
+    if (
+        item.type ===
         "application"
     ) {
 
@@ -1997,64 +2391,84 @@ async function initializeLauncher() {
 
 
     /*
-     * Clean up old exact duplicate
-     * website entries.
-     *
-     * The first saved copy is kept.
+     * Clean up duplicate website and web app
+     * entries. The first saved copy is kept.
      */
 
     const seenWebsiteKeys =
         new Set();
 
+    const seenWebAppKeys =
+        new Set();
 
     launcherItems =
         launcherItems.filter(
             (item) => {
 
                 if (
-                    item.type !==
+                    item.type ===
                     "website"
                 ) {
 
-                    return true;
+                    const key =
+                        getWebsiteKey(
+                            item.target
+                        );
 
-                }
+                    if (!key) {
+                        return true;
+                    }
 
+                    if (
+                        seenWebsiteKeys.has(
+                            key
+                        )
+                    ) {
+                        return false;
+                    }
 
-                const key =
-                    getWebsiteKey(
-                        item.target
+                    seenWebsiteKeys.add(
+                        key
                     );
 
-
-                if (!key) {
-
                     return true;
 
                 }
 
-
                 if (
-                    seenWebsiteKeys.has(
-                        key
-                    )
+                    item.type ===
+                    "webapp"
                 ) {
 
-                    return false;
+                    const key =
+                        getWebsiteKey(
+                            item.target
+                        );
+
+                    if (!key) {
+                        return true;
+                    }
+
+                    if (
+                        seenWebAppKeys.has(
+                            key
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    seenWebAppKeys.add(
+                        key
+                    );
+
+                    return true;
 
                 }
-
-
-                seenWebsiteKeys.add(
-                    key
-                );
-
 
                 return true;
 
             }
         );
-
 
     await saveLauncherItems(
         launcherItems
