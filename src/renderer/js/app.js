@@ -800,9 +800,15 @@ function createCard(item) {
     card.classList.add("app-card");
     card.dataset.itemId = item.id;
 
+    const isMissingApplication =
+        item.type === "application" &&
+        item.missing === true;
+
     let iconHtml = "▣";
 
-    if (item.favicon) {
+    if (isMissingApplication) {
+        iconHtml = "⚠";
+    } else if (item.favicon) {
         iconHtml = `<img src="${item.favicon}" alt="icon" onerror="this.src=''; this.innerHTML='🌐';">`;
     } else if (item.type === "website") {
         iconHtml = "🌐";
@@ -814,11 +820,20 @@ function createCard(item) {
 
     const favoriteStar = item.favorite ? `<span class="card-favorite-star" title="Favorite">★</span>` : "";
 
+    if (isMissingApplication) {
+        card.classList.add("app-card-missing");
+    }
+
+    const cardTypeLabel =
+        isMissingApplication
+            ? "Application Missing"
+            : item.type;
+
     card.innerHTML = `
         <div class="card-icon">${iconHtml}</div>
         ${favoriteStar}
         <h4>${escapeHtml(item.name)}</h4>
-        <p>${escapeHtml(item.type)}</p>
+        <p>${escapeHtml(cardTypeLabel)}</p>
     `;
 
     card.addEventListener("click", () => openItem(item));
@@ -868,10 +883,55 @@ async function openItem(item) {
     }
 
     if (item.type === "application") {
-        const result = await window.launcherAPI.openApplication(item.target);
-        if (!result || !result.success) {
-            showMessage("Application Not Available", result && result.message ? result.message : "The application could not be opened.");
+        let applicationCheck;
+
+        try {
+            applicationCheck =
+                await window.launcherAPI.checkApplication(
+                    item.target
+                );
+        } catch {
+            applicationCheck = {
+                valid: false,
+                exists: false
+            };
         }
+
+        if (
+            !applicationCheck ||
+            !applicationCheck.valid ||
+            !applicationCheck.exists
+        ) {
+            item.missing = true;
+            renderItems();
+
+            showMessage(
+                "Application Missing",
+                `"${item.name}" could not be found. The executable may have been moved or deleted.`
+            );
+
+            return;
+        }
+
+        if (item.missing) {
+            item.missing = false;
+            renderItems();
+        }
+
+        const result =
+            await window.launcherAPI.openApplication(
+                item.target
+            );
+
+        if (!result || !result.success) {
+            showMessage(
+                "Application Not Available",
+                result && result.message
+                    ? result.message
+                    : "The application could not be opened."
+            );
+        }
+
         return;
     }
 }
@@ -1062,6 +1122,47 @@ searchInput.addEventListener("input", () => {
 
 
 /* ==============================
+   Missing Application Detection
+================================= */
+
+async function detectMissingApplications() {
+    let changed = false;
+
+    for (const item of launcherItems) {
+        if (item.type !== "application") {
+            continue;
+        }
+
+        let applicationCheck;
+
+        try {
+            applicationCheck =
+                await window.launcherAPI.checkApplication(
+                    item.target
+                );
+        } catch {
+            applicationCheck = {
+                valid: false,
+                exists: false
+            };
+        }
+
+        const missing =
+            !applicationCheck ||
+            !applicationCheck.valid ||
+            !applicationCheck.exists;
+
+        if (item.missing !== missing) {
+            item.missing = missing;
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
+
+/* ==============================
    Initialize Launcher
 ================================= */
 
@@ -1100,6 +1201,9 @@ async function initializeLauncher() {
     initSettingsEvents();
 
     launcherItems = await loadLauncherItems();
+
+    await detectMissingApplications();
+
     renderItems();
 
     await loadMissingApplicationIcons();
