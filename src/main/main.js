@@ -18,6 +18,12 @@ const dataFile = path.join(
     'launcher-data.json'
 );
 
+const imagesDir = 'S:\\Projects\\my-launcher\\images';
+
+if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+}
+
 const webAppWindows = new Map();
 
 
@@ -127,6 +133,107 @@ ipcMain.handle(
 );
 
 
+// Favicon auto-fetch, local save & offline fallback handler
+ipcMain.handle('fetch-favicon', async (event, targetUrl) => {
+    try {
+        if (!targetUrl) return null;
+        const parsed = new URL(targetUrl);
+        const domain = parsed.hostname;
+        const sanitizedDomain = domain.replace(/[^a-z0-9]/gi, '_');
+        const filePath = path.join(imagesDir, `${sanitizedDomain}.png`);
+
+        if (fs.existsSync(filePath)) {
+            const bitmap = fs.readFileSync(filePath);
+            const base64 = Buffer.from(bitmap).toString('base64');
+            return `data:image/png;base64,${base64}`;
+        }
+
+        const faviconApiUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+        const fetchImageWithRedirects = (url, resolve) => {
+            https.get(url, (res) => {
+                if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                    return fetchImageWithRedirects(res.headers.location, resolve);
+                }
+
+                if (res.statusCode === 200) {
+                    let chunks = [];
+                    res.on('data', (chunk) => chunks.push(chunk));
+                    res.on('end', () => {
+                        const buffer = Buffer.concat(chunks);
+                        if (buffer.length > 0) {
+                            fs.writeFileSync(filePath, buffer);
+                            const base64 = buffer.toString('base64');
+                            resolve(`data:image/png;base64,${base64}`);
+                        } else {
+                            resolve(null);
+                        }
+                    });
+                    res.on('error', () => resolve(null));
+                } else {
+                    resolve(null);
+                }
+            }).on('error', () => resolve(null));
+        };
+
+        return new Promise((resolve) => {
+            fetchImageWithRedirects(faviconApiUrl, resolve);
+        });
+    } catch (err) {
+        return null;
+    }
+});
+
+
+const extractFileIcon = require('extract-file-icon');
+
+// Electron ka built-in native icon extractor & local saver
+ipcMain.handle('fetch-app-icon', async (event, exePath) => {
+    try {
+        if (!exePath || !fs.existsSync(exePath)) return null;
+
+        const basename = path.basename(exePath, '.exe');
+        const sanitizedName = basename.replace(/[^a-z0-9]/gi, '_');
+        const filePath = path.join(imagesDir, `exe_${sanitizedName}.png`);
+
+        // 1. Agar pehle se folder mein saved hai, toh wahi se base64 read karke bhej do
+        if (fs.existsSync(filePath)) {
+            const bitmap = fs.readFileSync(filePath);
+            const base64 = Buffer.from(bitmap).toString('base64');
+            return `data:image/png;base64,${base64}`;
+        }
+
+        // 2. Electron ki built-in API se icon nikalna
+        // Size options: 'small' (16x16), 'normal' (32x32), 'large' (48x48 ya us se bara)
+        const icon = await app.getFileIcon(exePath, { size: 'large' });
+
+        if (icon && !icon.isEmpty()) {
+            const pngBuffer = icon.toPNG();
+            if (pngBuffer && pngBuffer.length > 0) {
+                // Seedha images folder mein save kar do
+                fs.writeFileSync(filePath, pngBuffer);
+                const base64 = pngBuffer.toString('base64');
+                return `data:image/png;base64,${base64}`;
+            }
+        }
+
+        return null;
+    } catch (err) {
+        console.error('Failed to get app icon:', err);
+        return null;
+    }
+});
+// Helper function for unique string hash
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash;
+}
+
+
 function findBravePath() {
 
     const possiblePaths = [
@@ -220,18 +327,15 @@ function checkWebsiteAvailability(url) {
         };
 
 
+        // HEAD ki bajaye GET request use kar rahe hain taake Upwork jaisi sites block na karein
         const request = client.request(
-
             parsedUrl,
-
             {
-                method: 'HEAD',
-
-                timeout: 2500,
-
+                method: 'GET',
+                timeout: 4000,
                 headers: {
-                    'User-Agent':
-                        'My-Launcher/1.0'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
                 }
             },
 
@@ -242,7 +346,8 @@ function checkWebsiteAvailability(url) {
                     response.statusCode < 400
                 );
 
-                response.resume();
+                // Connection destroy kar do taake poori website download na ho, bas status mil jaye
+                response.destroy();
 
             }
 
@@ -499,7 +604,7 @@ ipcMain.handle(
 
                     title:
                         typeof name === 'string' &&
-                        name.trim()
+                            name.trim()
                             ? name.trim()
                             : 'Web App',
 
@@ -822,14 +927,14 @@ ipcMain.handle(
                 !text
             ) {
 
-                return false;
+                return { success: false };
 
             }
 
 
             clipboard.writeText(text);
 
-            return true;
+            return { success: true };
 
         }
 
@@ -840,7 +945,7 @@ ipcMain.handle(
                 error
             );
 
-            return false;
+            return { success: false };
 
         }
 

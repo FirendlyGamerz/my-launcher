@@ -1,6 +1,53 @@
 /* ==============================
-   Base
+   Base & Theme Variables
 ================================= */
+
+:root {
+    --bg-main: #080808;
+    --bg-sidebar: #0d0d0d;
+    --bg-topbar: rgba(8, 8, 8, 0.94);
+    --bg-card: #111111;
+    --bg-card-hover: #171717;
+    --bg-input: #111111;
+    --bg-dialog: #111111;
+    --bg-button: #181818;
+    --bg-button-hover: #222222;
+    --border-color: #202020;
+    --border-focus: #3b3b3b;
+    --text-primary: #f5f5f5;
+    --text-secondary: #a8a8a8;
+    --text-muted: #777777;
+    --accent-color: #3b82f6;
+
+    --card-min-width: 180px;
+    --card-min-height: 120px;
+    --card-padding: 18px;
+    --card-icon-size: 22px;
+}
+
+[data-theme="light"] {
+    --bg-main: #f8fafc;
+    --bg-sidebar: #ffffff;
+    --bg-topbar: rgba(248, 250, 252, 0.94);
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --bg-input: #ffffff;
+    --bg-dialog: #ffffff;
+    --bg-button: #f1f5f9;
+    --bg-button-hover: #e2e8f0;
+    --border-color: #e2e8f0;
+    --border-focus: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+}
+
+body.layout-compact {
+    --card-min-width: 140px;
+    --card-min-height: 90px;
+    --card-padding: 12px;
+    --card-icon-size: 18px;
+}
 
 * {
     margin: 0;
@@ -16,8 +63,9 @@ body {
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    background: #080808;
-    color: #f5f5f5;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 
@@ -41,8 +89,8 @@ body {
     width: 240px;
     height: 100vh;
 
-    background: #0d0d0d;
-    border-right: 1px solid #202020;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
 
     display: flex;
     flex-direction: column;
@@ -59,6 +107,7 @@ body {
     font-size: 20px;
     font-weight: 600;
     letter-spacing: 0.3px;
+    color: var(--text-primary);
 }
 
 .sidebar-nav {
@@ -76,7 +125,7 @@ body {
 
     border-radius: 8px;
 
-    color: #a8a8a8;
+    color: var(--text-secondary);
     text-decoration: none;
 
     font-size: 14px;
@@ -87,13 +136,14 @@ body {
 }
 
 .nav-item:hover {
-    background: #181818;
-    color: #ffffff;
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
 }
 
 .nav-item.active {
-    background: #202020;
-    color: #ffffff;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
+    border-left: 3px solid var(--accent-color);
 }
 
 .sidebar-bottom {
@@ -104,11 +154,11 @@ body {
     width: 100%;
     height: 42px;
 
-    border: 1px solid #2c2c2c;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
 
-    background: #171717;
-    color: #ffffff;
+    background: var(--bg-button);
+    color: var(--text-primary);
 
     font-size: 14px;
     cursor: pointer;
@@ -119,8 +169,8 @@ body {
 }
 
 .add-button:hover {
-    background: #222222;
-    border-color: #3a3a3a;
+    background: var(--bg-button-hover);
+    border-color: var(--accent-color);
 }
 
 
@@ -134,7 +184,7 @@ body {
 
     overflow-y: auto;
 
-    background: #080808;
+    background: var(--bg-main);
 }
 
 
@@ -153,8 +203,8 @@ body {
     height: 76px;
     padding: 0 34px;
 
-    background: rgba(8, 8, 8, 0.94);
-    border-bottom: 1px solid #181818;
+    background: var(--bg-topbar);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .search-container {
@@ -168,13 +218,13 @@ body {
 
     padding: 0 16px;
 
-    border: 1px solid #262626;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
 
     outline: none;
 
-    background: #111111;
-    color: #ffffff;
+    background: var(--bg-input);
+    color: var(--text-primary);
 
     font-size: 14px;
 
@@ -184,12 +234,11 @@ body {
 }
 
 #search-input::placeholder {
-    color: #666666;
+    color: var(--text-muted);
 }
 
 #search-input:focus {
-    border-color: #3b3b3b;
-    background: #141414;
+    border-color: var(--accent-color);
 }
 
 
@@ -222,10 +271,11 @@ body {
     font-size: 28px;
     font-weight: 600;
     margin-bottom: 8px;
+    color: var(--text-primary);
 }
 
 .dashboard-header p {
-    color: #777777;
+    color: var(--text-muted);
     font-size: 14px;
 }
 
@@ -245,13 +295,13 @@ body {
 
     text-align: center;
 
-    color: #777777;
+    color: var(--text-muted);
 }
 
 .home-empty-state h3 {
     margin-bottom: 10px;
 
-    color: #dddddd;
+    color: var(--text-primary);
 
     font-size: 20px;
     font-weight: 600;
@@ -280,7 +330,7 @@ body {
 .section-header h3 {
     font-size: 17px;
     font-weight: 600;
-    color: #eeeeee;
+    color: var(--text-primary);
 }
 
 
@@ -292,7 +342,7 @@ body {
     display: grid;
 
     grid-template-columns:
-        repeat(auto-fill, minmax(180px, 1fr));
+        repeat(auto-fill, minmax(var(--card-min-width), 1fr));
 
     gap: 14px;
 }
@@ -303,14 +353,14 @@ body {
 ================================= */
 
 .app-card {
-    min-height: 120px;
+    min-height: var(--card-min-height);
 
-    padding: 18px;
+    padding: var(--card-padding);
 
-    border: 1px solid #202020;
+    border: 1px solid var(--border-color);
     border-radius: 10px;
 
-    background: #111111;
+    background: var(--bg-card);
 
     cursor: pointer;
 
@@ -321,15 +371,15 @@ body {
 }
 
 .app-card:hover {
-    background: #171717;
-    border-color: #303030;
+    background: var(--bg-card-hover);
+    border-color: var(--accent-color);
     transform: translateY(-2px);
 }
 
 .card-icon {
     margin-bottom: 12px;
 
-    font-size: 22px;
+    font-size: var(--card-icon-size);
 }
 
 .app-card h4 {
@@ -338,15 +388,191 @@ body {
     font-size: 15px;
     font-weight: 600;
 
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .app-card p {
     font-size: 12px;
 
-    color: #777777;
+    color: var(--text-muted);
 
     text-transform: capitalize;
+}
+
+
+/* ==============================
+   Settings Page Styles
+================================= */
+
+.settings-container {
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.settings-group {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.settings-group h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+}
+
+.setting-item:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-info label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.setting-info p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.setting-control select {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.setting-control select:focus {
+    border-color: var(--accent-color);
+}
+
+/* Accent Selector */
+.accent-picker {
+    display: flex;
+    gap: 8px;
+}
+
+.accent-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.accent-swatch:hover {
+    transform: scale(1.1);
+}
+
+.accent-swatch.active {
+    border-color: var(--text-primary);
+    transform: scale(1.15);
+}
+
+/* Toggle Switch UI */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--bg-button);
+    border: 1px solid var(--border-color);
+    transition: .2s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-secondary);
+    transition: .2s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+    background-color: #ffffff;
+}
+
+/* Settings Action Buttons */
+.action-button {
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.action-button:hover {
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
+}
+
+.action-button.danger {
+    background: #2b1717;
+    border-color: #4a2424;
+    color: #f87171;
+}
+
+.action-button.danger:hover {
+    background: #3d1e1e;
+    border-color: #ef4444;
+}
+
+.version-badge {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--bg-button);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
 }
 
 
@@ -359,16 +585,16 @@ body {
 }
 
 .main-content::-webkit-scrollbar-track {
-    background: #080808;
+    background: var(--bg-main);
 }
 
 .main-content::-webkit-scrollbar-thumb {
-    background: #252525;
+    background: var(--border-color);
     border-radius: 10px;
 }
 
 .main-content::-webkit-scrollbar-thumb:hover {
-    background: #333333;
+    background: var(--border-focus);
 }
 
 
@@ -393,9 +619,9 @@ body {
 .dialog-box {
     width: 420px;
 
-    background: #111111;
+    background: var(--bg-dialog);
 
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
 
     box-shadow:
@@ -409,12 +635,13 @@ body {
 
     padding: 18px 20px;
 
-    border-bottom: 1px solid #222222;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
     font-size: 17px;
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 .close-button {
@@ -425,7 +652,7 @@ body {
     border-radius: 6px;
 
     background: transparent;
-    color: #888888;
+    color: var(--text-muted);
 
     font-size: 22px;
 
@@ -433,8 +660,8 @@ body {
 }
 
 .close-button:hover {
-    background: #202020;
-    color: #ffffff;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
 }
 
 .dialog-content {
@@ -444,7 +671,7 @@ body {
 .dialog-content > p {
     margin-bottom: 16px;
 
-    color: #777777;
+    color: var(--text-muted);
     font-size: 13px;
 }
 
@@ -454,11 +681,11 @@ body {
 
     margin-bottom: 10px;
 
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
 
-    background: #181818;
-    color: #ffffff;
+    background: var(--bg-button);
+    color: var(--text-primary);
 
     font-size: 14px;
 
@@ -470,8 +697,8 @@ body {
 }
 
 .item-type-button:hover {
-    background: #222222;
-    border-color: #383838;
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
 }
 
 
@@ -492,7 +719,7 @@ body {
 
     margin-bottom: 7px;
 
-    color: #dddddd;
+    color: var(--text-primary);
     font-size: 13px;
 }
 
@@ -503,24 +730,24 @@ body {
 
     padding: 0 12px;
 
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 7px;
 
     outline: none;
 
-    background: #181818;
-    color: #ffffff;
+    background: var(--bg-input);
+    color: var(--text-primary);
 
     font-size: 13px;
 }
 
 .form-group input[type="text"]:focus,
 .form-group input[type="url"]:focus {
-    border-color: #3b3b3b;
+    border-color: var(--accent-color);
 }
 
 .form-group input::placeholder {
-    color: #666666;
+    color: var(--text-muted);
 }
 
 .favorite-field label {
@@ -550,11 +777,11 @@ body {
 
     padding: 0 18px;
 
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 7px;
 
-    background: #181818;
-    color: #ffffff;
+    background: var(--bg-button);
+    color: var(--text-primary);
 
     font-size: 13px;
 
@@ -562,7 +789,7 @@ body {
 }
 
 .form-actions button:hover {
-    background: #222222;
+    background: var(--bg-button-hover);
 }
 
 .form-actions button:disabled {
@@ -601,9 +828,9 @@ body {
     column-gap: 14px;
     row-gap: 20px;
 
-    background: #111111;
+    background: var(--bg-dialog);
 
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
 
     box-shadow:
@@ -620,8 +847,8 @@ body {
 
     border-radius: 50%;
 
-    background: #222222;
-    color: #dddddd;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
 
     font-size: 18px;
     font-weight: 600;
@@ -631,13 +858,14 @@ body {
     margin-bottom: 6px;
 
     font-size: 16px;
+
     font-weight: 600;
 
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .message-content p {
-    color: #858585;
+    color: var(--text-muted);
 
     font-size: 13px;
 
@@ -654,17 +882,17 @@ body {
 
     padding: 0 16px;
 
-    border: 1px solid #303030;
+    border: 1px solid var(--border-color);
     border-radius: 7px;
 
-    background: #1a1a1a;
-    color: #ffffff;
+    background: var(--bg-button);
+    color: var(--text-primary);
 
     cursor: pointer;
 }
 
 .message-close:hover {
-    background: #242424;
+    background: var(--bg-button-hover);
 }
 
 
@@ -691,9 +919,9 @@ body {
 
     padding: 24px;
 
-    background: #111111;
+    background: var(--bg-dialog);
 
-    border: 1px solid #303030;
+    border: 1px solid var(--border-color);
     border-radius: 13px;
 
     box-shadow:
@@ -712,8 +940,8 @@ body {
 
     border-radius: 50%;
 
-    background: #242424;
-    color: #eeeeee;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
 
     font-size: 20px;
     font-weight: 700;
@@ -723,13 +951,14 @@ body {
     margin-bottom: 8px;
 
     font-size: 18px;
+
     font-weight: 600;
 
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .delete-content p {
-    color: #888888;
+    color: var(--text-muted);
 
     font-size: 13px;
 
@@ -759,14 +988,14 @@ body {
 }
 
 #delete-cancel {
-    border: 1px solid #303030;
+    border: 1px solid var(--border-color);
 
-    background: #181818;
-    color: #dddddd;
+    background: var(--bg-button);
+    color: var(--text-primary);
 }
 
 #delete-cancel:hover {
-    background: #222222;
+    background: var(--bg-button-hover);
 }
 
 #delete-confirm {
@@ -794,9 +1023,9 @@ body {
 
     padding: 6px;
 
-    background: #151515;
+    background: var(--bg-dialog);
 
-    border: 1px solid #2b2b2b;
+    border: 1px solid var(--border-color);
     border-radius: 9px;
 
     box-shadow:
@@ -818,7 +1047,7 @@ body {
     border-radius: 6px;
 
     background: transparent;
-    color: #dddddd;
+    color: var(--text-primary);
 
     font-size: 13px;
 
@@ -828,8 +1057,8 @@ body {
 }
 
 .context-menu-item:hover {
-    background: #242424;
-    color: #ffffff;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
 }
 
 .context-menu-item.danger {
@@ -846,7 +1075,7 @@ body {
 
     margin: 5px 4px;
 
-    background: #292929;
+    background: var(--border-color);
 }
 
 /* ==============================
@@ -867,17 +1096,17 @@ body {
     flex: 0 0 auto;
     height: 40px;
     padding: 0 13px;
-    border: 1px solid #292929;
+    border: 1px solid var(--border-color);
     border-radius: 7px;
-    background: #202020;
-    color: #ffffff;
+    background: var(--bg-button);
+    color: var(--text-primary);
     font-size: 13px;
     cursor: pointer;
 }
 
 .browse-button:hover {
-    background: #292929;
-    border-color: #3a3a3a;
+    background: var(--bg-button-hover);
+    border-color: var(--border-focus);
 }
 
 .browse-button:disabled {
@@ -919,11 +1148,11 @@ body {
 }
 
 .form-actions .form-cancel {
-    background: #141414;
-    color: #aaaaaa;
+    background: var(--bg-button);
+    color: var(--text-muted);
 }
 
 .form-actions .form-cancel:hover {
-    background: #202020;
-    color: #ffffff;
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
 }

@@ -56,6 +56,11 @@ contextBridge.exposeInMainWorld(
         copyToClipboard: (text) => ipcRenderer.invoke(
             'copy-to-clipboard',
             text
+        ),
+
+        fetchFavicon: (targetUrl) => ipcRenderer.invoke(
+            'fetch-favicon',
+            targetUrl
         )
 
     }

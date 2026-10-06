@@ -331,7 +331,184 @@
 
                         <h2>Settings</h2>
 
-                        <p>Launcher settings</p>
+                        <p>Launcher settings and options</p>
+
+                    </div>
+
+                    <div class="settings-container">
+                        <!-- 1. Appearance Section -->
+                        <div class="settings-group">
+                            <h3>1. Appearance</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-theme">Theme</label>
+                                    <p>Select dark, light, or system default theme</p>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="setting-theme">
+                                        <option value="dark">Dark</option>
+                                        <option value="light">Light</option>
+                                        <option value="system">System Default</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-density">Layout Density</label>
+                                    <p>Choose comfortable or compact card layout</p>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="setting-density">
+                                        <option value="comfortable">Comfortable</option>
+                                        <option value="compact">Compact</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Accent Color</label>
+                                    <p>Choose an accent highlight color</p>
+                                </div>
+                                <div class="setting-control accent-picker">
+                                    <button type="button" class="accent-swatch active" data-color="#3b82f6" style="background: #3b82f6;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#10b981" style="background: #10b981;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#f59e0b" style="background: #f59e0b;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#ef4444" style="background: #ef4444;"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Behavior Section -->
+                        <div class="settings-group">
+                            <h3>2. Behavior</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-autostart">Start with Windows</label>
+                                    <p>Launch application automatically when system boots</p>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="setting-autostart">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-tray">Minimize to System Tray</label>
+                                    <p>Keep running in taskbar notification area when closed</p>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="setting-tray">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-start-minimized">Launch Minimized</label>
+                                    <p>Start app quietly in the background on startup</p>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="setting-start-minimized">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label for="setting-hotkey">Global Hotkey</label>
+                                    <p>Quick shortcut to show or hide the launcher window</p>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="setting-hotkey">
+                                        <option value="Alt+Space">Alt + Space</option>
+                                        <option value="Ctrl+Shift+L">Ctrl + Shift + L</option>
+                                        <option value="Ctrl+Space">Ctrl + Space</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Data & Storage Section -->
+                        <div class="settings-group">
+                            <h3>3. Data & Storage</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Backup Data</label>
+                                    <p>Export all launcher items and configuration to JSON file</p>
+                                </div>
+                                <div class="setting-control">
+                                    <button type="button" class="action-button" id="btn-backup-data">
+                                        Export Data
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Restore Data</label>
+                                    <p>Import items from a previously saved launcher backup JSON file</p>
+                                </div>
+                                <div class="setting-control">
+                                    <button type="button" class="action-button" id="btn-restore-data">
+                                        Import Data
+                                    </button>
+                                    <input type="file" id="import-file-input" accept=".json" style="display:none;">
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Reset Application</label>
+                                    <p>Clear all saved websites, apps, and preferences back to default</p>
+                                </div>
+                                <div class="setting-control">
+                                    <button type="button" class="action-button danger" id="btn-reset-data">
+                                        Reset All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. About & Version Section -->
+                        <div class="settings-group">
+                            <h3>4. About & Information</h3>
+                            
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Application Version</label>
+                                    <p>Current installed launcher version build</p>
+                                </div>
+                                <div class="setting-control">
+                                    <span class="version-badge">v1.0.0</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Check Updates</label>
+                                    <p>Verify if a newer version of My Launcher is available</p>
+                                </div>
+                                <div class="setting-control">
+                                    <button type="button" class="action-button" id="btn-check-update">
+                                        Check Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
 
