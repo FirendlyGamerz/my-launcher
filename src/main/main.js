@@ -18,6 +18,8 @@ const dataFile = path.join(
     'launcher-data.json'
 );
 
+const webAppWindows = new Map();
+
 
 function createWindow() {
 
@@ -427,6 +429,164 @@ ipcMain.handle(
     }
 );
 
+
+
+
+ipcMain.handle(
+    'open-webapp',
+    async (event, itemId, name, url) => {
+
+        try {
+
+            if (
+                typeof url !== 'string' ||
+                !/^https:\/\//i.test(url)
+            ) {
+
+                return {
+                    success: false,
+                    message:
+                        'The web app URL is not a valid HTTPS address.'
+                };
+
+            }
+
+            const parsedUrl =
+                new URL(url);
+
+            if (
+                parsedUrl.protocol !== 'https:'
+            ) {
+
+                return {
+                    success: false,
+                    message:
+                        'Web Apps currently require an HTTPS website.'
+                };
+
+            }
+
+            const existingWindow =
+                webAppWindows.get(
+                    itemId
+                );
+
+            if (
+                existingWindow &&
+                !existingWindow.isDestroyed()
+            ) {
+
+                existingWindow.show();
+                existingWindow.focus();
+
+                return {
+                    success: true,
+                    existing: true
+                };
+
+            }
+
+            const webAppWindow =
+                new BrowserWindow({
+
+                    width: 1200,
+
+                    height: 800,
+
+                    minWidth: 800,
+
+                    minHeight: 500,
+
+                    title:
+                        typeof name === 'string' &&
+                        name.trim()
+                            ? name.trim()
+                            : 'Web App',
+
+                    backgroundColor:
+                        '#080808',
+
+                    webPreferences: {
+
+                        nodeIntegration:
+                            false,
+
+                        contextIsolation:
+                            true,
+
+                        sandbox:
+                            true
+
+                    }
+
+                });
+
+            webAppWindows.set(
+                itemId,
+                webAppWindow
+            );
+
+            webAppWindow.on(
+                'closed',
+                () => {
+
+                    webAppWindows.delete(
+                        itemId
+                    );
+
+                }
+            );
+
+            webAppWindow.webContents.setWindowOpenHandler(
+                ({ url: requestedUrl }) => {
+
+                    if (
+                        /^https:\/\//i.test(
+                            requestedUrl
+                        )
+                    ) {
+
+                        shell.openExternal(
+                            requestedUrl
+                        );
+
+                    }
+
+                    return {
+                        action: 'deny'
+                    };
+
+                }
+            );
+
+            await webAppWindow.loadURL(
+                parsedUrl.href
+            );
+
+            return {
+                success: true,
+                existing: false
+            };
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Failed to open web app:',
+                error
+            );
+
+            return {
+                success: false,
+                message:
+                    'The web app could not be opened.'
+            };
+
+        }
+
+    }
+);
 
 ipcMain.handle(
     'select-application',
