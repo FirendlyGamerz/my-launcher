@@ -1047,6 +1047,10 @@ async function repairApplication(item) {
         );
     }
 
+    const oldPath = item.target;
+    const oldIcon = item.favicon || null;
+    const oldMissing = item.missing === true;
+
     item.target = newPath;
     item.missing = false;
     item.favicon = applicationIcon || null;
@@ -1054,7 +1058,10 @@ async function repairApplication(item) {
     const saved = await saveLauncherItems(launcherItems);
 
     if (!saved) {
-        item.missing = true;
+        item.target = oldPath;
+        item.favicon = oldIcon;
+        item.missing = oldMissing;
+
         showMessage(
             "Repair Failed",
             "The repaired application could not be saved."
