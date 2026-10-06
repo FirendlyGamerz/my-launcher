@@ -679,9 +679,18 @@ ipcMain.handle(
                 }
             );
 
-            await webAppWindow.loadURL(
+            webAppWindow.loadURL(
                 parsedUrl.href
-            );
+            ).catch((error) => {
+                if (
+                    !webAppWindow.isDestroyed()
+                ) {
+                    console.error(
+                        'Web app page failed to load:',
+                        error
+                    );
+                }
+            });
 
             return {
                 success: true,
