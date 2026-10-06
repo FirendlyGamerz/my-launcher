@@ -87,6 +87,9 @@ const websiteButton =
 const websiteForm =
     document.querySelector("#website-form");
 
+const saveWebsiteButton =
+    document.querySelector("#save-website");
+
 const applicationButton =
     document.querySelector("#application-button");
 
