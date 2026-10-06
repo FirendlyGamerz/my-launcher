@@ -185,16 +185,19 @@ ipcMain.handle('fetch-favicon', async (event, targetUrl) => {
 });
 
 
-const extractFileIcon = require('extract-file-icon');
 
 // Electron ka built-in native icon extractor & local saver
 ipcMain.handle('fetch-app-icon', async (event, exePath) => {
     try {
         if (!exePath || !fs.existsSync(exePath)) return null;
 
+        const normalizedExePath = path.resolve(exePath).toLowerCase();
         const basename = path.basename(exePath, '.exe');
         const sanitizedName = basename.replace(/[^a-z0-9]/gi, '_');
-        const filePath = path.join(imagesDir, `exe_${sanitizedName}.png`);
+        const filePath = path.join(
+            imagesDir,
+            `exe_${hashCode(normalizedExePath)}_${sanitizedName}.png`
+        );
 
         // 1. Agar pehle se folder mein saved hai, toh wahi se base64 read karke bhej do
         if (fs.existsSync(filePath)) {
