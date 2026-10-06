@@ -766,6 +766,39 @@ applicationForm.addEventListener("submit", async (event) => {
         });
     }
 
+    let applicationIcon = null;
+
+    try {
+        applicationIcon = await window.launcherAPI.fetchAppIcon(applicationPath);
+    } catch (error) {
+        console.error("Failed to fetch application icon:", error);
+    }
+
+    if (editingItemId !== null) {
+        const item = launcherItems.find((entry) => entry.id === editingItemId);
+        if (!item) {
+            showMessage("Update Failed", "The selected application could not be found.");
+            return;
+        }
+
+        item.name = name;
+        item.target = applicationPath;
+        item.favorite = favorite;
+
+        if (applicationIcon) {
+            item.favicon = applicationIcon;
+        }
+    } else {
+        launcherItems.push({
+            id: Date.now(),
+            name: name,
+            type: "application",
+            target: applicationPath,
+            favorite: favorite,
+            favicon: applicationIcon || null
+        });
+    }
+
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Save Failed", "The application could not be saved.");
@@ -778,7 +811,7 @@ applicationForm.addEventListener("submit", async (event) => {
 
 
 /* ==============================
-   Create Card & Favicon Integration
+   Create Card & Icon Integration
 ================================= */
 
 function createCard(item) {
@@ -1051,12 +1084,44 @@ searchInput.addEventListener("input", () => {
    Initialize Launcher
 ================================= */
 
+async function loadMissingApplicationIcons() {
+    let changed = false;
+
+    for (const item of launcherItems) {
+        if (item.type !== "application" || item.favicon) {
+            continue;
+        }
+
+        try {
+            const icon = await window.launcherAPI.fetchAppIcon(item.target);
+
+            if (icon) {
+                item.favicon = icon;
+                changed = true;
+            }
+        } catch (error) {
+            console.error(
+                "Failed to load application icon:",
+                error
+            );
+        }
+    }
+
+    if (changed) {
+        await saveLauncherItems(launcherItems);
+        renderItems();
+    }
+}
+
+
 async function initializeLauncher() {
     loadSettings();
     initSettingsEvents();
 
     launcherItems = await loadLauncherItems();
     renderItems();
+
+    await loadMissingApplicationIcons();
 }
 
 initializeLauncher();
