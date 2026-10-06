@@ -1156,3 +1156,23 @@ input:checked + .slider:before {
     background: var(--bg-button-hover);
     color: var(--text-primary);
 }
+
+/* ==============================
+   Missing Application Card
+================================= */
+
+.app-card-missing {
+    border-color: #4a3030;
+}
+
+.app-card-missing:hover {
+    border-color: #8a4545;
+}
+
+.app-card-missing .card-icon {
+    color: #f59e0b;
+}
+
+.app-card-missing p {
+    color: #f59e0b;
+}
