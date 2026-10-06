@@ -18,7 +18,15 @@ const dataFile = path.join(
     'launcher-data.json'
 );
 
-const imagesDir = 'S:\\Projects\\my-launcher\\images';
+const imagesDir = app.isPackaged
+    ? path.join(
+        app.getPath('userData'),
+        'images'
+    )
+    : path.join(
+        app.getAppPath(),
+        'images'
+    );
 
 if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true });
