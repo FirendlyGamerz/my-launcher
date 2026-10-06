@@ -230,6 +230,41 @@ body {
 }
 
 
+.home-dashboard {
+    min-height: calc(100vh - 76px);
+}
+
+.home-empty-state {
+    min-height: calc(100vh - 220px);
+
+    display: none;
+
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    color: #777777;
+}
+
+.home-empty-state h3 {
+    margin-bottom: 10px;
+
+    color: #dddddd;
+
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.home-empty-state p {
+    max-width: 440px;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
 /* ==============================
    Launcher Sections
 ================================= */
