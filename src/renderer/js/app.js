@@ -110,6 +110,9 @@ const browseApplicationButton =
 const saveApplicationButton =
     document.querySelector("#save-application");
 
+const formCancelButtons =
+    document.querySelectorAll(".form-cancel");
+
 
 const messageDialog =
     document.querySelector("#message-dialog");
@@ -277,6 +280,26 @@ function openAddDialog() {
 
     editingItemId = null;
 
+    document.querySelector(
+        ".dialog-header h3"
+    ).textContent =
+        "Add Item";
+
+    saveWebsiteButton.textContent =
+        "Save";
+
+    saveWebappButton.textContent =
+        "Save";
+
+    saveApplicationButton.textContent =
+        "Save";
+
+    formCancelButtons.forEach(
+        (button) => {
+            button.style.display = "";
+        }
+    );
+
     itemTypeSelection.style.display =
         "block";
 
@@ -313,6 +336,12 @@ function openAddDialog() {
 function closeAddDialog() {
 
     editingItemId = null;
+
+    formCancelButtons.forEach(
+        (button) => {
+            button.style.display = "";
+        }
+    );
 
     addDialog.style.display =
         "none";
@@ -412,6 +441,18 @@ applicationButton.addEventListener(
 
         applicationForm.style.display =
             "block";
+
+    }
+);
+
+
+formCancelButtons.forEach(
+    (button) => {
+
+        button.addEventListener(
+            "click",
+            closeAddDialog
+        );
 
     }
 );
@@ -1601,11 +1642,25 @@ function createCard(item) {
     }
 
 
+    const favoriteStar =
+        item.favorite
+            ? `
+                <span
+                    class="card-favorite-star"
+                    title="Favorite"
+                >
+                    ★
+                </span>
+            `
+            : "";
+
     card.innerHTML = `
 
         <div class="card-icon">
             ${icon}
         </div>
+
+        ${favoriteStar}
 
         <h4>${escapeHtml(item.name)}</h4>
 
@@ -2204,6 +2259,12 @@ function editItem(item) {
         saveWebsiteButton.textContent =
             "Update";
 
+        formCancelButtons.forEach(
+            (button) => {
+                button.style.display = "none";
+            }
+        );
+
         addDialog.style.display =
             "flex";
 
@@ -2249,6 +2310,12 @@ function editItem(item) {
         saveWebappButton.textContent =
             "Update";
 
+        formCancelButtons.forEach(
+            (button) => {
+                button.style.display = "none";
+            }
+        );
+
         addDialog.style.display =
             "flex";
 
@@ -2293,6 +2360,12 @@ function editItem(item) {
 
         saveApplicationButton.textContent =
             "Update";
+
+        formCancelButtons.forEach(
+            (button) => {
+                button.style.display = "none";
+            }
+        );
 
         addDialog.style.display =
             "flex";
