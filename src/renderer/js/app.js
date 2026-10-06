@@ -1199,6 +1199,75 @@ webappForm.addEventListener(
 );
 
 
+
+/* ==============================
+   Windows Application Duplicate Check
+================================= */
+
+function normalizeApplicationPath(
+    applicationPath
+) {
+
+    return applicationPath
+        .trim()
+        .replaceAll(
+            "/",
+            "\\"
+        )
+        .replace(
+            /\\+$/,
+            ""
+        )
+        .toLowerCase();
+
+}
+
+
+function findDuplicateApplication(
+    applicationPath,
+    ignoredItemId = null
+) {
+
+    const newPath =
+        normalizeApplicationPath(
+            applicationPath
+        );
+
+    if (!newPath) {
+        return null;
+    }
+
+    return launcherItems.find(
+        (item) => {
+
+            if (
+                item.type !==
+                "application"
+            ) {
+                return false;
+            }
+
+            if (
+                ignoredItemId !== null &&
+                item.id ===
+                ignoredItemId
+            ) {
+                return false;
+            }
+
+            return (
+                normalizeApplicationPath(
+                    item.target
+                ) ===
+                newPath
+            );
+
+        }
+    ) || null;
+
+}
+
+
 /* ==============================
    Windows Application Form
 ================================= */
@@ -1365,6 +1434,25 @@ applicationForm.addEventListener(
             showMessage(
                 "Application Not Found",
                 "The selected application file could not be found."
+            );
+
+            return;
+
+        }
+
+
+        const duplicateApplication =
+            findDuplicateApplication(
+                applicationPath,
+                editingItemId
+            );
+
+
+        if (duplicateApplication) {
+
+            showMessage(
+                "Already Added",
+                `"${duplicateApplication.name}" is already saved with this application path.`
             );
 
             return;
