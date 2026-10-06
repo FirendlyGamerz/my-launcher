@@ -38,24 +38,23 @@ const pageSections = {
 };
 
 
-const homeGrids = {
+const homeGrid =
+    document.querySelector("#home-grid");
 
-    websites:
-        document.querySelector("#home-websites-grid"),
-
-    webapps:
-        document.querySelector("#home-webapps-grid"),
-
-    applications:
-        document.querySelector("#home-applications-grid")
-
-};
+const homeEmptyState =
+    document.querySelector("#home-empty-state");
 
 
 const categoryGrids = {
 
-    favorites:
-        document.querySelector("#favorites-grid"),
+    favoritesWebsites:
+        document.querySelector("#favorites-websites-grid"),
+
+    favoritesWebapps:
+        document.querySelector("#favorites-webapps-grid"),
+
+    favoritesApplications:
+        document.querySelector("#favorites-applications-grid"),
 
     websites:
         document.querySelector("#websites-grid"),
@@ -1786,17 +1785,16 @@ async function openItem(item) {
 
 function renderItems() {
 
-    homeGrids.websites.innerHTML =
+    homeGrid.innerHTML =
         "";
 
-    homeGrids.webapps.innerHTML =
+    categoryGrids.favoritesWebsites.innerHTML =
         "";
 
-    homeGrids.applications.innerHTML =
+    categoryGrids.favoritesWebapps.innerHTML =
         "";
 
-
-    categoryGrids.favorites.innerHTML =
+    categoryGrids.favoritesApplications.innerHTML =
         "";
 
     categoryGrids.websites.innerHTML =
@@ -1812,20 +1810,29 @@ function renderItems() {
     launcherItems.forEach(
         (item) => {
 
+            homeGrid.appendChild(
+                createCard(item)
+            );
+
+
             if (
                 item.type ===
                 "website"
             ) {
 
-                homeGrids.websites
-                    .appendChild(
-                        createCard(item)
-                    );
-
                 categoryGrids.websites
                     .appendChild(
                         createCard(item)
                     );
+
+                if (item.favorite) {
+
+                    categoryGrids.favoritesWebsites
+                        .appendChild(
+                            createCard(item)
+                        );
+
+                }
 
             }
 
@@ -1834,15 +1841,19 @@ function renderItems() {
                 "webapp"
             ) {
 
-                homeGrids.webapps
-                    .appendChild(
-                        createCard(item)
-                    );
-
                 categoryGrids.webapps
                     .appendChild(
                         createCard(item)
                     );
+
+                if (item.favorite) {
+
+                    categoryGrids.favoritesWebapps
+                        .appendChild(
+                            createCard(item)
+                        );
+
+                }
 
             }
 
@@ -1851,30 +1862,30 @@ function renderItems() {
                 "application"
             ) {
 
-                homeGrids.applications
-                    .appendChild(
-                        createCard(item)
-                    );
-
                 categoryGrids.applications
                     .appendChild(
                         createCard(item)
                     );
 
-            }
+                if (item.favorite) {
 
+                    categoryGrids.favoritesApplications
+                        .appendChild(
+                            createCard(item)
+                        );
 
-            if (item.favorite) {
-
-                categoryGrids.favorites
-                    .appendChild(
-                        createCard(item)
-                    );
+                }
 
             }
 
         }
     );
+
+
+    homeEmptyState.style.display =
+        launcherItems.length === 0
+            ? "flex"
+            : "none";
 
 }
 
