@@ -22,6 +22,14 @@ contextBridge.exposeInMainWorld(
         ),
 
 
+        openWebApp: (itemId, name, url) => ipcRenderer.invoke(
+            'open-webapp',
+            itemId,
+            name,
+            url
+        ),
+
+
         checkWebsite: (url) => ipcRenderer.invoke(
             'check-website',
             url
