@@ -661,7 +661,7 @@ ipcMain.handle(
 
             if (
                 typeof url !== 'string' ||
-                !/^https:\/\//i.test(url)
+                !/^https?:\/\//i.test(url)
             ) {
 
                 return {
@@ -675,16 +675,11 @@ ipcMain.handle(
             const parsedUrl =
                 new URL(url);
 
-            if (
-                parsedUrl.protocol !== 'https:'
-            ) {
-
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
                 return {
                     success: false,
-                    message:
-                        'Web Apps currently require an HTTPS website.'
+                    message: 'The web app URL must use HTTP or HTTPS.'
                 };
-
             }
 
             const existingWindow =
@@ -761,11 +756,7 @@ ipcMain.handle(
             webAppWindow.webContents.setWindowOpenHandler(
                 ({ url: requestedUrl }) => {
 
-                    if (
-                        /^https:\/\//i.test(
-                            requestedUrl
-                        )
-                    ) {
+                    if (/^https?:\/\//i.test(requestedUrl)) {
 
                         shell.openExternal(
                             requestedUrl
