@@ -1109,38 +1109,41 @@ ipcMain.handle(
             }
 
 
-            const applicationProcess =
-                spawn(
-                    normalizedPath,
-                    [],
-                    {
-                        detached: true,
-                        stdio: 'ignore',
-                        windowsHide: false,
-                        cwd: path.dirname(normalizedPath)
-                    }
+            const applicationProcess = spawn(
+                normalizedPath,
+                [],
+                {
+                    detached: true,
+                    stdio: 'ignore',
+                    windowsHide: false,
+                    cwd: path.dirname(normalizedPath)
                 }
             );
 
-            let launchError = null;
-            applicationProcess.once('error', (error) => {
-                launchError = error;
-                console.error('Application process failed:', error);
-            });
-
-            applicationProcess.unref();
-
-            if (launchError) {
-                return {
-                    success: false,
-                    message: 'Windows could not start this application.'
+            return await new Promise((resolve) => {
+                let settled = false;
+                const finish = (result) => {
+                    if (settled) return;
+                    settled = true;
+                    applicationProcess.unref();
+                    resolve(result);
                 };
-            }
 
-            return {
-                success: true,
-                message: null
-            };
+                applicationProcess.once('error', (error) => {
+                    console.error('Application process failed:', error);
+                    finish({
+                        success: false,
+                        message: 'Windows could not start this application.'
+                    });
+                });
+
+                setTimeout(() => {
+                    finish({
+                        success: true,
+                        message: null
+                    });
+                }, 150);
+            });
 
         }
 
