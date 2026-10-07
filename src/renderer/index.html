@@ -859,14 +859,17 @@
                             </div>
 
                             <div class="add-category-select-row" id="website-category-select-row">
-                                <label for="website-category-select">Category</label>
-                                <select id="website-category-select">
-                                    <option value="">Select a category</option>
-                                </select>
+                                <label>Categories</label>
+                                <div class="multi-category-dropdown" data-category-type="website">
+                                    <button type="button" class="multi-category-trigger" id="website-category-trigger">
+                                        <span>Select categories</span>
+                                        <span class="multi-category-arrow">⌄</span>
+                                    </button>
+                                    <div class="multi-category-menu" id="website-category-menu"></div>
+                                </div>
                             </div>
 
-                        </div>
-<div class="form-group favorite-field">
+                            <div class="form-group favorite-field">
 
                             <label>
 
@@ -960,14 +963,17 @@
                             </div>
 
                             <div class="add-category-select-row" id="webapp-category-select-row">
-                                <label for="webapp-category-select">Category</label>
-                                <select id="webapp-category-select">
-                                    <option value="">Select a category</option>
-                                </select>
+                                <label>Categories</label>
+                                <div class="multi-category-dropdown" data-category-type="webapp">
+                                    <button type="button" class="multi-category-trigger" id="webapp-category-trigger">
+                                        <span>Select categories</span>
+                                        <span class="multi-category-arrow">⌄</span>
+                                    </button>
+                                    <div class="multi-category-menu" id="webapp-category-menu"></div>
+                                </div>
                             </div>
 
-                        </div>
-<div class="form-group favorite-field">
+                            <div class="form-group favorite-field">
 
                             <label>
 
@@ -1071,14 +1077,17 @@
                             </div>
 
                             <div class="add-category-select-row" id="application-category-select-row">
-                                <label for="application-category-select">Category</label>
-                                <select id="application-category-select">
-                                    <option value="">Select a category</option>
-                                </select>
+                                <label>Categories</label>
+                                <div class="multi-category-dropdown" data-category-type="application">
+                                    <button type="button" class="multi-category-trigger" id="application-category-trigger">
+                                        <span>Select categories</span>
+                                        <span class="multi-category-arrow">⌄</span>
+                                    </button>
+                                    <div class="multi-category-menu" id="application-category-menu"></div>
+                                </div>
                             </div>
 
-                        </div>
-<div class="form-group favorite-field">
+                            <div class="form-group favorite-field">
 
                             <label>
 
@@ -1179,6 +1188,34 @@
 
             </div>
 
+        </div>
+
+
+        <!-- Item Categories Dialog -->
+
+        <div class="item-categories-dialog" id="item-categories-dialog">
+            <div class="item-categories-box">
+                <div class="dialog-header">
+                    <h3>Categories</h3>
+                    <button type="button" class="close-button" id="close-item-categories-dialog">&times;</button>
+                </div>
+
+                <div class="item-categories-content">
+                    <label class="item-categories-label">Categories</label>
+                    <div class="multi-category-dropdown">
+                        <button type="button" class="multi-category-trigger" id="item-categories-trigger">
+                            <span>Select categories</span>
+                            <span class="multi-category-arrow">⌄</span>
+                        </button>
+                        <div class="multi-category-menu" id="item-categories-menu"></div>
+                    </div>
+
+                    <div class="item-categories-actions">
+                        <button type="button" class="form-cancel" id="cancel-item-categories">Cancel</button>
+                        <button type="button" id="save-item-categories">Add</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -1326,6 +1363,14 @@
                 data-action="edit"
             >
                 <span>Edit</span>
+            </button>
+
+            <button
+                class="context-menu-item"
+                data-action="add-categories"
+                id="context-add-categories"
+            >
+                <span>Add to Categories</span>
             </button>
 
             <button
