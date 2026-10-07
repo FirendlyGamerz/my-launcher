@@ -70,7 +70,8 @@ function registerGlobalHotkey(accelerator) {
 function createTray() {
     if (tray || !trayEnabled) return;
 
-    tray = new Tray(nativeImage.createEmpty());
+    const trayIcon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVR4nGO0bvr2n4ECwESJ5lEDRg0YNWAwGQAAMLgC0lzzz3wAAAAASUVORK5CYII=');
+    tray = new Tray(trayIcon);
     tray.setToolTip('My Launcher');
     tray.setContextMenu(Menu.buildFromTemplate([
         {
