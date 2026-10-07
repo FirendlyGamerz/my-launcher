@@ -117,6 +117,12 @@
                         placeholder="Search..."
                     >
 
+                    <select id="sort-select" aria-label="Sort items">
+                        <option value="default">Sort: Default</option>
+                        <option value="name-az">Name: A-Z</option>
+                        <option value="name-za">Name: Z-A</option>
+                    </select>
+
                 </div>
 
             </header>
@@ -476,9 +482,14 @@
                                     <p>Clear all saved websites, apps, and preferences back to default</p>
                                 </div>
                                 <div class="setting-control">
-                                    <button type="button" class="action-button danger" id="btn-reset-data">
-                                        Reset All
-                                    </button>
+                                    <div class="settings-action-group">
+                                        <button type="button" class="action-button" id="btn-reset-settings">
+                                            Reset Settings
+                                        </button>
+                                        <button type="button" class="action-button danger" id="btn-reset-data">
+                                            Reset All
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
