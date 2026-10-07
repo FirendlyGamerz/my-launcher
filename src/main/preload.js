@@ -10,9 +10,10 @@ contextBridge.exposeInMainWorld(
         ),
 
 
-        saveData: (items) => ipcRenderer.invoke(
+        saveData: (items, options = {}) => ipcRenderer.invoke(
             'save-launcher-data',
-            items
+            items,
+            options
         ),
 
         applyBehaviorSettings: (settings) => ipcRenderer.invoke(
