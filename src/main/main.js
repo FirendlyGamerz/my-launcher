@@ -1006,7 +1006,7 @@ ipcMain.handle(
 
 ipcMain.handle(
     'check-application',
-    (event, applicationPath) => {
+    async (event, applicationPath) => {
 
         try {
 
