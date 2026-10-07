@@ -322,6 +322,14 @@ function showPage(pageName) {
         }
     });
 
+    searchInput.value = "";
+    document.querySelectorAll(".app-card").forEach((card) => {
+        card.style.display = "";
+    });
+    document.querySelectorAll(".search-empty-state").forEach((state) => {
+        state.remove();
+    });
+
     closeContextMenu();
 }
 
@@ -1281,18 +1289,52 @@ deleteConfirm.addEventListener("click", async () => {
    Search
 ================================= */
 
-searchInput.addEventListener("input", () => {
+function applySearch() {
     const query = searchInput.value.trim().toLowerCase();
-    document.querySelectorAll(".app-card").forEach((card) => {
-        const itemId = Number(card.dataset.itemId);
-        const item = launcherItems.find((entry) => entry.id === itemId);
-        if (!item) return;
 
-        const target = item.target || "";
-        const matches = !query || item.name.toLowerCase().includes(query) || target.toLowerCase().includes(query);
-        card.style.display = matches ? "" : "none";
+    document.querySelectorAll(".search-empty-state").forEach((state) => {
+        state.remove();
     });
-});
+
+    document.querySelectorAll(".app-grid").forEach((grid) => {
+        let visibleCount = 0;
+
+        grid.querySelectorAll(".app-card").forEach((card) => {
+            const itemId = Number(card.dataset.itemId);
+            const item = launcherItems.find((entry) => entry.id === itemId);
+
+            if (!item) {
+                card.style.display = "";
+                return;
+            }
+
+            const name = String(item.name || "").toLowerCase();
+            const type = String(item.type || "").toLowerCase();
+            const target = String(item.target || "").toLowerCase();
+
+            const matches =
+                !query ||
+                name.includes(query) ||
+                type.includes(query) ||
+                target.includes(query);
+
+            card.style.display = matches ? "" : "none";
+
+            if (matches) {
+                visibleCount++;
+            }
+        });
+
+        if (query && visibleCount === 0 && grid.querySelector(".app-card")) {
+            const emptyState = document.createElement("div");
+            emptyState.className = "search-empty-state";
+            emptyState.innerHTML = "<h3>No matching items</h3><p>Try a different name, type, or search term.</p>";
+            grid.appendChild(emptyState);
+        }
+    });
+}
+
+searchInput.addEventListener("input", applySearch);
 
 
 /* ==============================
