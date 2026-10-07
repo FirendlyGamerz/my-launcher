@@ -490,7 +490,8 @@ function renderLauncherPicker() {
                 ...item,
                 id: Date.now(),
                 categoryId: pendingCategoryId,
-                sourceItemId: item.id
+                sourceItemId: item.id,
+                customName: false
             };
 
             launcherItems.push(copiedItem);
@@ -1097,13 +1098,20 @@ async function handleConfirmAction() {
     }
 
     if (action === "all") {
+        const oldItems = [...launcherItems];
+        const oldCategories = [...launcherCategories];
         launcherItems = [];
         launcherCategories = [];
         localStorage.removeItem(CATEGORIES_STORAGE_KEY);
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
+        const categoriesSaved = saveLauncherCategories();
         const saved = await saveLauncherItems(launcherItems);
-        if (!saved) {
+        if (!saved || !categoriesSaved) {
+            launcherItems = oldItems;
+            launcherCategories = oldCategories;
+            saveLauncherCategories();
+            await saveLauncherItems(launcherItems);
             showMessage("Reset Failed", "The launcher data could not be reset because it could not be saved.");
             return;
         }
@@ -1738,7 +1746,7 @@ function syncOriginalItemToCategoryCopies(item) {
 
     launcherItems.forEach((copy) => {
         if (Number(copy.sourceItemId) !== Number(item.id) || !isCategoryCopy(copy)) return;
-        copy.name = item.name;
+        if (!copy.customName) copy.name = item.name;
         copy.type = item.type;
         copy.target = item.target;
         copy.favorite = Boolean(item.favorite);
@@ -2300,12 +2308,15 @@ if (categoryItemNameForm) {
         }
 
         const oldName = item.name;
+        const oldCustomName = Boolean(item.customName);
         item.name = newName;
+        item.customName = true;
 
         const saved = await saveLauncherItems(launcherItems);
 
         if (!saved) {
             item.name = oldName;
+            item.customName = oldCustomName;
             showMessage(
                 "Save Failed",
                 "The category item name could not be updated."
@@ -2396,7 +2407,8 @@ async function syncItemCategories(item, selectedIds) {
                 ...item,
                 id: Date.now() + Math.floor(Math.random() * 1000000),
                 categoryId,
-                sourceItemId: item.id
+                sourceItemId: item.id,
+                customName: false
             });
         }
     });
@@ -2578,6 +2590,7 @@ contextMenu.addEventListener("click", async (event) => {
     } else if (action === "favorite") {
         const oldFavorite = Boolean(item.favorite);
         item.favorite = !oldFavorite;
+        if (!isCategoryCopy(item)) syncOriginalItemToCategoryCopies(item);
         const saved = await saveLauncherItems(launcherItems);
         if (!saved) {
             item.favorite = oldFavorite;
