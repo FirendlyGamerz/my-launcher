@@ -2115,6 +2115,8 @@ input:checked + .slider:before {
 }
 
 .category-launcher-button {
+    display: block;
+    margin: 16px 0 0 auto;
     flex: 0 0 auto;
     min-height: 34px;
     padding: 0 12px;
