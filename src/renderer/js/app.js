@@ -45,6 +45,14 @@ function loadSettings() {
         console.error("Failed to load settings:", error);
     }
     applySettings();
+    if (window.launcherAPI && window.launcherAPI.applyBehaviorSettings) {
+        window.launcherAPI.applyBehaviorSettings({
+            autoStart: Boolean(appSettings.autoStart),
+            minimizeToTray: Boolean(appSettings.minimizeToTray),
+            startMinimized: Boolean(appSettings.startMinimized),
+            hotkey: appSettings.hotkey
+        }).catch((error) => console.error("Failed to apply behavior settings:", error));
+    }
 }
 
 function saveSettings() {
@@ -208,6 +216,37 @@ function exportBackupData() {
     showMessage("Backup Exported", "Aapka data aur settings JSON backup file me export ho chuki hain.");
 }
 
+function validateBackupData(data) {
+    if (!data || !Array.isArray(data.items) || !Array.isArray(data.categories)) return false;
+
+    const validTypes = new Set(["website", "webapp", "application"]);
+    const categoryIds = new Set(
+        data.categories
+            .filter((c) => c && (typeof c.id === "number" || typeof c.id === "string") && String(c.name || "").trim())
+            .map((c) => Number(c.id))
+    );
+
+    const ids = new Set();
+
+    return data.items.every((item) => {
+        if (!item || (typeof item.id !== "number" && typeof item.id !== "string")) return false;
+        if (ids.has(Number(item.id))) return false;
+        ids.add(Number(item.id));
+
+        if (!validTypes.has(item.type)) return false;
+        if (typeof item.name !== "string" || !item.name.trim()) return false;
+        if (typeof item.target !== "string" || !item.target.trim()) return false;
+
+        const isCopy = item.categoryId !== undefined && item.categoryId !== null;
+        if (isCopy) {
+            if (!categoryIds.has(Number(item.categoryId))) return false;
+            if (item.sourceItemId === undefined || item.sourceItemId === null) return false;
+        }
+
+        return true;
+    });
+}
+
 function handleImportBackup(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -216,27 +255,46 @@ function handleImportBackup(e) {
     reader.onload = async (event) => {
         try {
             const importedData = JSON.parse(event.target.result);
-            if (importedData && Array.isArray(importedData.items)) {
-                launcherItems = importedData.items;
-                launcherCategories = Array.isArray(importedData.categories)
-                    ? importedData.categories
-                    : [];
-                saveLauncherCategories();
 
-                if (importedData.settings) {
-                    appSettings = { ...appSettings, ...importedData.settings };
-                    saveSettings();
-                }
-                await saveLauncherItems(launcherItems);
-                renderItems();
-                showMessage("Restore Successful", "Items aur settings successfully restore ho chuki hain.");
-            } else {
-                showMessage("Invalid File", "Selected JSON file me valid launcher data mojood nahi hai.");
+            if (!validateBackupData(importedData)) {
+                showMessage("Invalid File", "Selected backup contains invalid launcher data.");
+                return;
             }
+
+            const oldItems = [...launcherItems];
+            const oldCategories = [...launcherCategories];
+            const oldSettings = { ...appSettings };
+
+            launcherItems = importedData.items;
+            launcherCategories = importedData.categories;
+
+            if (importedData.settings && typeof importedData.settings === "object") {
+                appSettings = { ...appSettings, ...importedData.settings };
+            }
+
+            const categoriesSaved = saveLauncherCategories();
+            const settingsBefore = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            saveSettings();
+            const itemsSaved = await saveLauncherItems(launcherItems);
+
+            if (!categoriesSaved || !itemsSaved) {
+                launcherItems = oldItems;
+                launcherCategories = oldCategories;
+                appSettings = oldSettings;
+                if (settingsBefore === null) localStorage.removeItem(SETTINGS_STORAGE_KEY);
+                else localStorage.setItem(SETTINGS_STORAGE_KEY, settingsBefore);
+                showMessage("Restore Failed", "The backup could not be fully saved.");
+                return;
+            }
+
+            refreshAllAddCategoryControls();
+            renderItems();
+            showMessage("Restore Successful", "Items aur settings successfully restore ho chuki hain.");
         } catch (err) {
             showMessage("Import Error", "Imported JSON file parse karne me fail ho gaya.");
+        } finally {
+            e.target.value = "";
         }
-        e.target.value = "";
     };
     reader.readAsText(file);
 }
@@ -1862,37 +1920,48 @@ function createCard(item) {
         item.type === "application" &&
         item.missing === true;
 
-    let iconHtml = "▣";
-
-    if (isMissingApplication) {
-        iconHtml = "⚠";
-    } else if (item.favicon) {
-        iconHtml = `<img src="${item.favicon}" alt="icon" onerror="this.src=''; this.innerHTML='🌐';">`;
-    } else if (item.type === "website") {
-        iconHtml = "🌐";
-    } else if (item.type === "webapp") {
-        iconHtml = "◉";
-    } else if (item.type === "application") {
-        iconHtml = "▦";
-    }
-
-    const favoriteStar = item.favorite ? `<span class="card-favorite-star" title="Favorite">★</span>` : "";
-
     if (isMissingApplication) {
         card.classList.add("app-card-missing");
     }
 
-    const cardTypeLabel =
-        isMissingApplication
-            ? "Application Missing"
-            : item.type;
+    const icon = document.createElement("div");
+    icon.className = "card-icon";
 
-    card.innerHTML = `
-        <div class="card-icon">${iconHtml}</div>
-        ${favoriteStar}
-        <h4>${escapeHtml(item.name)}</h4>
-        <p>${escapeHtml(cardTypeLabel)}</p>
-    `;
+    if (isMissingApplication) {
+        icon.textContent = "⚠";
+    } else if (item.favicon) {
+        const image = document.createElement("img");
+        image.src = String(item.favicon);
+        image.alt = "";
+        image.addEventListener("error", () => {
+            image.remove();
+            icon.textContent = "🌐";
+        }, { once: true });
+        icon.appendChild(image);
+    } else {
+        icon.textContent =
+            item.type === "website" ? "🌐" :
+            item.type === "webapp" ? "◉" : "▦";
+    }
+
+    const cardTypeLabel = isMissingApplication ? "Application Missing" : item.type;
+    card.appendChild(icon);
+
+    if (item.favorite) {
+        const star = document.createElement("span");
+        star.className = "card-favorite-star";
+        star.title = "Favorite";
+        star.textContent = "★";
+        card.appendChild(star);
+    }
+
+    const title = document.createElement("h4");
+    title.textContent = String(item.name || "");
+    card.appendChild(title);
+
+    const type = document.createElement("p");
+    type.textContent = cardTypeLabel;
+    card.appendChild(type);
 
     card.addEventListener("click", () => openItem(item));
 
