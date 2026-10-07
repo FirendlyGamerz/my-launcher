@@ -5,19 +5,14 @@
 
     <meta charset="UTF-8">
 
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: http:;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' data: blob:; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: http:;">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>My Launcher</title>
 
-    <link
-        rel="stylesheet"
-        href="css/style.css"
-    >
+    <link rel="stylesheet" href="css/style.css">
 
 </head>
 
@@ -27,71 +22,98 @@
 
         <!-- Sidebar -->
 
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
 
             <div class="sidebar-header">
 
                 <h1>My Launcher</h1>
+
+                <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar"
+                    title="Collapse sidebar">
+                    <span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </span>
+                </button>
 
             </div>
 
 
             <nav class="sidebar-nav">
 
-                <a
-                    href="#"
-                    class="nav-item active"
-                    data-section="home"
-                >
-                    Home
+                <a href="#" class="nav-item active" data-section="home" data-tooltip="Home">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 10.5 12 3l9 7.5"></path>
+                            <path d="M5 9.5V21h14V9.5"></path>
+                            <path d="M9 21v-6h6v6"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
                 </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="favorites"
-                >
-                    Favorites
+
+                <a href="#" class="nav-item" data-section="favorites" data-tooltip="Favorites">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9L12 3z">
+                            </path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Favorites</span>
                 </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="websites"
-                >
-                    Websites
+
+                <a href="#" class="nav-item" data-section="websites" data-tooltip="Websites">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M3 12h18"></path>
+                            <path d="M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3z">
+                            </path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Websites</span>
                 </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="webapps"
-                >
-                    Web Apps
+
+                <a href="#" class="nav-item" data-section="webapps" data-tooltip="Web Apps">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                            <path d="M3 9h18"></path>
+                            <path d="M7 6.5h.01"></path>
+                            <path d="M10 6.5h.01"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Web Apps</span>
                 </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="applications"
-                >
-                    Applications
+
+                <a href="#" class="nav-item" data-section="applications" data-tooltip="Applications">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                            <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                            <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                            <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Applications</span>
                 </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="categories"
-                >
-                    Categories
-                </a>
 
-                <a
-                    href="#"
-                    class="nav-item"
-                    data-section="settings"
-                >
-                    Settings
+                <a href="#" class="nav-item" data-section="categories" data-tooltip="Categories">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-11z">
+                            </path>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Categories</span>
                 </a>
 
             </nav>
@@ -99,12 +121,18 @@
 
             <div class="sidebar-bottom">
 
-                <button
-                    class="add-button"
-                    id="add-button"
-                >
-                    + Add
-                </button>
+                <a href="#" class="nav-item settings-nav-item" data-section="settings" data-tooltip="Settings">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path
+                                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                            </path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Settings</span>
+                </a>
 
             </div>
 
@@ -121,11 +149,7 @@
 
                 <div class="search-container">
 
-                    <input
-                        type="search"
-                        id="search-input"
-                        placeholder="Search..."
-                    >
+                    <input type="search" id="search-input" placeholder="Search...">
 
                     <select id="sort-select" aria-label="Sort items">
                         <option value="default">Sort: Default</option>
@@ -140,30 +164,27 @@
 
             <!-- Home -->
 
-            <section
-                class="page-section active-page"
-                id="home-section"
-            >
+            <section class="page-section active-page" id="home-section">
 
                 <div class="dashboard home-dashboard">
 
-                    <div class="dashboard-header">
+                    <div class="dashboard-header home-header">
 
-                        <h2>Home</h2>
+                        <div>
+                            <h2>Home</h2>
 
-                        <p>Your launcher dashboard</p>
+                            <p>Your launcher dashboard</p>
+                        </div>
+
+                        <button type="button" class="add-button home-add-button" id="add-button">
+                            + Add
+                        </button>
 
                     </div>
 
-                    <div
-                        class="app-grid"
-                        id="home-grid"
-                    ></div>
+                    <div class="app-grid" id="home-grid"></div>
 
-                    <div
-                        class="home-empty-state"
-                        id="home-empty-state"
-                    >
+                    <div class="home-empty-state" id="home-empty-state">
                         <h3>Welcome to My Launcher</h3>
 
                         <p>
@@ -179,10 +200,7 @@
 
             <!-- Favorites -->
 
-            <section
-                class="page-section"
-                id="favorites-section"
-            >
+            <section class="page-section" id="favorites-section">
 
                 <div class="dashboard">
 
@@ -205,10 +223,7 @@
 
                         </div>
 
-                        <div
-                            class="app-grid"
-                            id="favorites-websites-grid"
-                        ></div>
+                        <div class="app-grid" id="favorites-websites-grid"></div>
 
                     </section>
 
@@ -223,10 +238,7 @@
 
                         </div>
 
-                        <div
-                            class="app-grid"
-                            id="favorites-webapps-grid"
-                        ></div>
+                        <div class="app-grid" id="favorites-webapps-grid"></div>
 
                     </section>
 
@@ -241,10 +253,7 @@
 
                         </div>
 
-                        <div
-                            class="app-grid"
-                            id="favorites-applications-grid"
-                        ></div>
+                        <div class="app-grid" id="favorites-applications-grid"></div>
 
                     </section>
 
@@ -255,10 +264,7 @@
 
             <!-- Websites -->
 
-            <section
-                class="page-section"
-                id="websites-section"
-            >
+            <section class="page-section" id="websites-section">
 
                 <div class="dashboard">
 
@@ -270,10 +276,7 @@
 
                     </div>
 
-                    <div
-                        class="app-grid"
-                        id="websites-grid"
-                    ></div>
+                    <div class="app-grid" id="websites-grid"></div>
 
                 </div>
 
@@ -282,10 +285,7 @@
 
             <!-- Web Apps -->
 
-            <section
-                class="page-section"
-                id="webapps-section"
-            >
+            <section class="page-section" id="webapps-section">
 
                 <div class="dashboard">
 
@@ -297,10 +297,7 @@
 
                     </div>
 
-                    <div
-                        class="app-grid"
-                        id="webapps-grid"
-                    ></div>
+                    <div class="app-grid" id="webapps-grid"></div>
 
                 </div>
 
@@ -309,10 +306,7 @@
 
             <!-- Applications -->
 
-            <section
-                class="page-section"
-                id="applications-section"
-            >
+            <section class="page-section" id="applications-section">
 
                 <div class="dashboard">
 
@@ -324,10 +318,7 @@
 
                     </div>
 
-                    <div
-                        class="app-grid"
-                        id="applications-grid"
-                    ></div>
+                    <div class="app-grid" id="applications-grid"></div>
 
                 </div>
 
@@ -336,10 +327,7 @@
 
             <!-- Categories -->
 
-            <section
-                class="page-section"
-                id="categories-section"
-            >
+            <section class="page-section" id="categories-section">
 
                 <div class="dashboard categories-dashboard">
 
@@ -350,37 +338,23 @@
                             <p>Organize your launcher items into groups</p>
                         </div>
 
-                        <button
-                            type="button"
-                            class="category-add-button"
-                            id="add-category-button"
-                        >
+                        <button type="button" class="category-add-button" id="add-category-button">
                             + Add Category
                         </button>
 
                     </div>
 
-                    <div
-                        class="categories-empty-state"
-                        id="categories-empty-state"
-                    >
+                    <div class="categories-empty-state" id="categories-empty-state">
                         <div class="categories-empty-icon">+</div>
 
-                        <button
-                            type="button"
-                            class="category-empty-button"
-                            id="add-category-empty-button"
-                        >
+                        <button type="button" class="category-empty-button" id="add-category-empty-button">
                             + Add Category
                         </button>
 
                         <p>Create categories to organize your apps in groups</p>
                     </div>
 
-                    <div
-                        class="categories-grid"
-                        id="categories-grid"
-                    ></div>
+                    <div class="categories-grid" id="categories-grid"></div>
 
                 </div>
 
@@ -389,10 +363,7 @@
 
             <!-- Settings -->
 
-            <section
-                class="page-section"
-                id="settings-section"
-            >
+            <section class="page-section" id="settings-section">
 
                 <div class="dashboard">
 
@@ -408,7 +379,7 @@
                         <!-- 1. Appearance Section -->
                         <div class="settings-group">
                             <h3>1. Appearance</h3>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-info">
                                     <label for="setting-theme">Theme</label>
@@ -442,11 +413,16 @@
                                     <p>Choose an accent highlight color</p>
                                 </div>
                                 <div class="setting-control accent-picker">
-                                    <button type="button" class="accent-swatch active" data-color="#3b82f6" style="background: #3b82f6;"></button>
-                                    <button type="button" class="accent-swatch" data-color="#10b981" style="background: #10b981;"></button>
-                                    <button type="button" class="accent-swatch" data-color="#8b5cf6" style="background: #8b5cf6;"></button>
-                                    <button type="button" class="accent-swatch" data-color="#f59e0b" style="background: #f59e0b;"></button>
-                                    <button type="button" class="accent-swatch" data-color="#ef4444" style="background: #ef4444;"></button>
+                                    <button type="button" class="accent-swatch active" data-color="#3b82f6"
+                                        style="background: #3b82f6;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#10b981"
+                                        style="background: #10b981;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#8b5cf6"
+                                        style="background: #8b5cf6;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#f59e0b"
+                                        style="background: #f59e0b;"></button>
+                                    <button type="button" class="accent-swatch" data-color="#ef4444"
+                                        style="background: #ef4444;"></button>
                                 </div>
                             </div>
                         </div>
@@ -454,7 +430,7 @@
                         <!-- 2. Behavior Section -->
                         <div class="settings-group">
                             <h3>2. Behavior</h3>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-info">
                                     <label for="setting-autostart">Start with Windows</label>
@@ -513,7 +489,7 @@
                         <!-- 3. Data & Storage Section -->
                         <div class="settings-group">
                             <h3>3. Data & Storage</h3>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-info">
                                     <label>Backup Data</label>
@@ -560,7 +536,7 @@
                         <!-- 4. About & Version Section -->
                         <div class="settings-group">
                             <h3>4. About & Information</h3>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-info">
                                     <label>Application Version</label>
@@ -595,10 +571,7 @@
 
         <!-- Category Launcher Source Dialog -->
 
-        <div
-            class="category-source-dialog"
-            id="category-source-dialog"
-        >
+        <div class="category-source-dialog" id="category-source-dialog">
 
             <div class="category-source-box">
 
@@ -606,11 +579,7 @@
 
                     <h3>Add Launcher</h3>
 
-                    <button
-                        type="button"
-                        class="close-button"
-                        id="close-category-source-dialog"
-                    >
+                    <button type="button" class="close-button" id="close-category-source-dialog">
                         &times;
                     </button>
 
@@ -618,20 +587,12 @@
 
                 <div class="category-source-actions">
 
-                    <button
-                        type="button"
-                        class="category-source-option"
-                        id="category-new-button"
-                    >
+                    <button type="button" class="category-source-option" id="category-new-button">
                         <strong>+ New</strong>
                         <span>Create a new Website, Web App, or Application</span>
                     </button>
 
-                    <button
-                        type="button"
-                        class="category-source-option"
-                        id="category-existing-button"
-                    >
+                    <button type="button" class="category-source-option" id="category-existing-button">
                         <strong>From Launcher</strong>
                         <span>Choose an item already saved in My Launcher</span>
                     </button>
@@ -645,10 +606,7 @@
 
         <!-- From Launcher Dialog -->
 
-        <div
-            class="launcher-picker-dialog"
-            id="launcher-picker-dialog"
-        >
+        <div class="launcher-picker-dialog" id="launcher-picker-dialog">
 
             <div class="launcher-picker-box">
 
@@ -656,11 +614,7 @@
 
                     <h3>From Launcher</h3>
 
-                    <button
-                        type="button"
-                        class="close-button"
-                        id="close-launcher-picker"
-                    >
+                    <button type="button" class="close-button" id="close-launcher-picker">
                         &times;
                     </button>
 
@@ -668,17 +622,10 @@
 
                 <div class="launcher-picker-content">
 
-                    <input
-                        type="search"
-                        id="launcher-picker-search"
-                        placeholder="Search launcher items..."
-                        autocomplete="off"
-                    >
+                    <input type="search" id="launcher-picker-search" placeholder="Search launcher items..."
+                        autocomplete="off">
 
-                    <div
-                        class="launcher-picker-list"
-                        id="launcher-picker-list"
-                    ></div>
+                    <div class="launcher-picker-list" id="launcher-picker-list"></div>
 
                 </div>
 
@@ -689,10 +636,7 @@
 
         <!-- Category Dialog -->
 
-        <div
-            class="category-dialog"
-            id="category-dialog"
-        >
+        <div class="category-dialog" id="category-dialog">
 
             <div class="category-dialog-box">
 
@@ -700,41 +644,24 @@
 
                     <h3>Add Category</h3>
 
-                    <button
-                        type="button"
-                        class="close-button"
-                        id="close-category-dialog"
-                    >
+                    <button type="button" class="close-button" id="close-category-dialog">
                         &times;
                     </button>
 
                 </div>
 
-                <form
-                    class="category-form"
-                    id="category-form"
-                >
+                <form class="category-form" id="category-form">
 
                     <div class="dialog-content">
 
                         <div class="form-group">
                             <label for="category-name">Category Name</label>
 
-                            <input
-                                type="text"
-                                id="category-name"
-                                placeholder="e.g. Work"
-                                maxlength="40"
-                                required
-                            >
+                            <input type="text" id="category-name" placeholder="e.g. Work" maxlength="40" required>
                         </div>
 
                         <div class="form-actions">
-                            <button
-                                type="button"
-                                class="form-cancel"
-                                id="cancel-category"
-                            >
+                            <button type="button" class="form-cancel" id="cancel-category">
                                 Cancel
                             </button>
 
@@ -754,10 +681,7 @@
 
         <!-- Add / Edit Dialog -->
 
-        <div
-            class="add-dialog"
-            id="add-dialog"
-        >
+        <div class="add-dialog" id="add-dialog">
 
             <div class="dialog-box">
 
@@ -765,10 +689,7 @@
 
                     <h3>Add Item</h3>
 
-                    <button
-                        class="close-button"
-                        id="close-dialog"
-                    >
+                    <button class="close-button" id="close-dialog">
                         &times;
                     </button>
 
@@ -782,24 +703,15 @@
 
                     <div class="item-type-selection">
 
-                        <button
-                            class="item-type-button"
-                            id="website-button"
-                        >
+                        <button class="item-type-button" id="website-button">
                             Website
                         </button>
 
-                        <button
-                            class="item-type-button"
-                            id="webapp-button"
-                        >
+                        <button class="item-type-button" id="webapp-button">
                             Web App
                         </button>
 
-                        <button
-                            class="item-type-button"
-                            id="application-button"
-                        >
+                        <button class="item-type-button" id="application-button">
                             Windows Application
                         </button>
 
@@ -808,10 +720,7 @@
 
                     <!-- Website Form -->
 
-                    <form
-                        class="item-form"
-                        id="website-form"
-                    >
+                    <form class="item-form" id="website-form">
 
                         <div class="form-group">
 
@@ -819,12 +728,7 @@
                                 Name
                             </label>
 
-                            <input
-                                type="text"
-                                id="website-name"
-                                placeholder="e.g. YouTube"
-                                required
-                            >
+                            <input type="text" id="website-name" placeholder="e.g. YouTube" required>
 
                         </div>
 
@@ -835,17 +739,12 @@
                                 URL
                             </label>
 
-                            <input
-                                type="text"
-                                id="website-url"
-                                placeholder="e.g. youtube.com"
-                                required
-                            >
+                            <input type="text" id="website-url" placeholder="e.g. youtube.com" required>
 
                         </div>
 
 
-                        
+
                         <div class="form-group add-category-group" id="website-category-group">
 
                             <div class="add-category-toggle-row">
@@ -873,33 +772,24 @@
 
                             <div class="form-group favorite-field">
 
-                            <label>
+                                <label>
 
-                                <input
-                                    type="checkbox"
-                                    id="website-favorite"
-                                >
+                                    <input type="checkbox" id="website-favorite">
 
-                                Add to Favorites
+                                    Add to Favorites
 
-                            </label>
+                                </label>
 
                             </div>
                         </div>
 
                         <div class="form-actions">
 
-                            <button
-                                type="submit"
-                                id="save-website"
-                            >
+                            <button type="submit" id="save-website">
                                 Save
                             </button>
 
-                            <button
-                                type="button"
-                                class="form-cancel"
-                            >
+                            <button type="button" class="form-cancel">
                                 Cancel
                             </button>
 
@@ -912,10 +802,7 @@
 
                     <!-- Web App Form -->
 
-                    <form
-                        class="item-form"
-                        id="webapp-form"
-                    >
+                    <form class="item-form" id="webapp-form">
 
                         <div class="form-group">
 
@@ -923,12 +810,7 @@
                                 Name
                             </label>
 
-                            <input
-                                type="text"
-                                id="webapp-name"
-                                placeholder="e.g. YouTube"
-                                required
-                            >
+                            <input type="text" id="webapp-name" placeholder="e.g. YouTube" required>
 
                         </div>
 
@@ -939,17 +821,12 @@
                                 URL
                             </label>
 
-                            <input
-                                type="text"
-                                id="webapp-url"
-                                placeholder="e.g. youtube.com"
-                                required
-                            >
+                            <input type="text" id="webapp-url" placeholder="e.g. youtube.com" required>
 
                         </div>
 
 
-                        
+
                         <div class="form-group add-category-group" id="webapp-category-group">
 
                             <div class="add-category-toggle-row">
@@ -977,33 +854,24 @@
 
                             <div class="form-group favorite-field">
 
-                            <label>
+                                <label>
 
-                                <input
-                                    type="checkbox"
-                                    id="webapp-favorite"
-                                >
+                                    <input type="checkbox" id="webapp-favorite">
 
-                                Add to Favorites
+                                    Add to Favorites
 
-                            </label>
+                                </label>
 
                             </div>
                         </div>
 
                         <div class="form-actions">
 
-                            <button
-                                type="submit"
-                                id="save-webapp"
-                            >
+                            <button type="submit" id="save-webapp">
                                 Save
                             </button>
 
-                            <button
-                                type="button"
-                                class="form-cancel"
-                            >
+                            <button type="button" class="form-cancel">
                                 Cancel
                             </button>
 
@@ -1013,10 +881,7 @@
 
                     <!-- Windows Application Form -->
 
-                    <form
-                        class="item-form"
-                        id="application-form"
-                    >
+                    <form class="item-form" id="application-form">
 
                         <div class="form-group">
 
@@ -1024,12 +889,7 @@
                                 Name
                             </label>
 
-                            <input
-                                type="text"
-                                id="application-name"
-                                placeholder="e.g. Visual Studio Code"
-                                required
-                            >
+                            <input type="text" id="application-name" placeholder="e.g. Visual Studio Code" required>
 
                         </div>
 
@@ -1042,19 +902,10 @@
 
                             <div class="path-input-row">
 
-                                <input
-                                    type="text"
-                                    id="application-path"
-                                    placeholder="Select an .exe file"
-                                    readonly
-                                    required
-                                >
+                                <input type="text" id="application-path" placeholder="Select an .exe file" readonly
+                                    required>
 
-                                <button
-                                    type="button"
-                                    class="browse-button"
-                                    id="browse-application"
-                                >
+                                <button type="button" class="browse-button" id="browse-application">
                                     Browse
                                 </button>
 
@@ -1063,7 +914,7 @@
                         </div>
 
 
-                        
+
                         <div class="form-group add-category-group" id="application-category-group">
 
                             <div class="add-category-toggle-row">
@@ -1081,7 +932,8 @@
                             <div class="add-category-select-row" id="application-category-select-row">
                                 <label>Categories</label>
                                 <div class="multi-category-dropdown" data-category-type="application">
-                                    <button type="button" class="multi-category-trigger" id="application-category-trigger">
+                                    <button type="button" class="multi-category-trigger"
+                                        id="application-category-trigger">
                                         <span>Select categories</span>
                                         <span class="multi-category-arrow">⌄</span>
                                     </button>
@@ -1091,33 +943,24 @@
 
                             <div class="form-group favorite-field">
 
-                            <label>
+                                <label>
 
-                                <input
-                                    type="checkbox"
-                                    id="application-favorite"
-                                >
+                                    <input type="checkbox" id="application-favorite">
 
-                                Add to Favorites
+                                    Add to Favorites
 
-                            </label>
+                                </label>
 
                             </div>
                         </div>
 
                         <div class="form-actions">
 
-                            <button
-                                type="submit"
-                                id="save-application"
-                            >
+                            <button type="submit" id="save-application">
                                 Save
                             </button>
 
-                            <button
-                                type="button"
-                                class="form-cancel"
-                            >
+                            <button type="button" class="form-cancel">
                                 Cancel
                             </button>
 
@@ -1135,10 +978,7 @@
 
         <!-- Category Item Name Dialog -->
 
-        <div
-            class="category-item-name-dialog"
-            id="category-item-name-dialog"
-        >
+        <div class="category-item-name-dialog" id="category-item-name-dialog">
 
             <div class="category-item-name-box">
 
@@ -1146,11 +986,7 @@
 
                     <h3>Edit Name</h3>
 
-                    <button
-                        type="button"
-                        class="close-button"
-                        id="close-category-item-name-dialog"
-                    >
+                    <button type="button" class="close-button" id="close-category-item-name-dialog">
                         &times;
                     </button>
 
@@ -1162,20 +998,11 @@
 
                         <div class="form-group">
                             <label for="category-item-name">Name</label>
-                            <input
-                                type="text"
-                                id="category-item-name"
-                                maxlength="100"
-                                required
-                            >
+                            <input type="text" id="category-item-name" maxlength="100" required>
                         </div>
 
                         <div class="form-actions">
-                            <button
-                                type="button"
-                                class="form-cancel"
-                                id="cancel-category-item-name"
-                            >
+                            <button type="button" class="form-cancel" id="cancel-category-item-name">
                                 Cancel
                             </button>
 
@@ -1223,17 +1050,11 @@
 
         <!-- Message Dialog -->
 
-        <div
-            class="message-dialog"
-            id="message-dialog"
-        >
+        <div class="message-dialog" id="message-dialog">
 
             <div class="message-box">
 
-                <div
-                    class="message-icon"
-                    id="message-icon"
-                >
+                <div class="message-icon" id="message-icon">
                     !
                 </div>
 
@@ -1249,10 +1070,7 @@
 
                 </div>
 
-                <button
-                    class="message-close"
-                    id="message-close"
-                >
+                <button class="message-close" id="message-close">
                     OK
                 </button>
 
@@ -1263,10 +1081,7 @@
 
         <!-- Reset Confirmation Dialog -->
 
-        <div
-            class="confirm-dialog"
-            id="confirm-dialog"
-        >
+        <div class="confirm-dialog" id="confirm-dialog">
             <div class="confirm-box">
                 <div class="confirm-icon" id="confirm-dialog-icon">!</div>
 
@@ -1276,19 +1091,11 @@
                 </div>
 
                 <div class="confirm-actions">
-                    <button
-                        type="button"
-                        class="confirm-cancel"
-                        id="confirm-dialog-cancel"
-                    >
+                    <button type="button" class="confirm-cancel" id="confirm-dialog-cancel">
                         Cancel
                     </button>
 
-                    <button
-                        type="button"
-                        class="confirm-confirm"
-                        id="confirm-dialog-confirm"
-                    >
+                    <button type="button" class="confirm-confirm" id="confirm-dialog-confirm">
                         Confirm
                     </button>
                 </div>
@@ -1298,10 +1105,7 @@
 
         <!-- Delete Confirmation Dialog -->
 
-        <div
-            class="delete-dialog"
-            id="delete-dialog"
-        >
+        <div class="delete-dialog" id="delete-dialog">
 
             <div class="delete-box">
 
@@ -1325,17 +1129,11 @@
 
                 <div class="delete-actions">
 
-                    <button
-                        type="button"
-                        id="delete-cancel"
-                    >
+                    <button type="button" id="delete-cancel">
                         Cancel
                     </button>
 
-                    <button
-                        type="button"
-                        id="delete-confirm"
-                    >
+                    <button type="button" id="delete-confirm">
                         Delete
                     </button>
 
@@ -1348,65 +1146,37 @@
 
         <!-- Context Menu -->
 
-        <div
-            class="context-menu"
-            id="context-menu"
-        >
+        <div class="context-menu" id="context-menu">
 
-            <button
-                class="context-menu-item"
-                data-action="open"
-            >
+            <button class="context-menu-item" data-action="open">
                 <span>Open</span>
             </button>
 
-            <button
-                class="context-menu-item"
-                data-action="edit"
-            >
+            <button class="context-menu-item" data-action="edit">
                 <span>Edit</span>
             </button>
 
-            <button
-                class="context-menu-item"
-                data-action="add-categories"
-                id="context-add-categories"
-            >
+            <button class="context-menu-item" data-action="add-categories" id="context-add-categories">
                 <span>Add to Categories</span>
             </button>
 
-            <button
-                class="context-menu-item"
-                data-action="repair"
-                id="context-repair"
-            >
+            <button class="context-menu-item" data-action="repair" id="context-repair">
                 <span>Locate / Repair</span>
             </button>
 
             <div class="context-menu-separator"></div>
 
-            <button
-                class="context-menu-item"
-                data-action="favorite"
-                id="context-favorite"
-            >
+            <button class="context-menu-item" data-action="favorite" id="context-favorite">
                 <span>Add to Favorites</span>
             </button>
 
-            <button
-                class="context-menu-item"
-                data-action="copy"
-                id="context-copy"
-            >
+            <button class="context-menu-item" data-action="copy" id="context-copy">
                 <span>Copy URL</span>
             </button>
 
             <div class="context-menu-separator"></div>
 
-            <button
-                class="context-menu-item danger"
-                data-action="delete"
-            >
+            <button class="context-menu-item danger" data-action="delete">
                 <span>Delete</span>
             </button>
 

@@ -372,7 +372,53 @@ function getDefaultSettings() {
 ================================= */
 
 const navItems = document.querySelectorAll(".nav-item");
+const sidebar = document.querySelector("#sidebar");
+const sidebarToggle = document.querySelector("#sidebar-toggle");
+const appShell = document.querySelector(".app");
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "my_launcher_sidebar_collapsed";
+
+function applySidebarState(collapsed) {
+    if (!appShell || !sidebarToggle) return;
+
+    appShell.classList.toggle("sidebar-collapsed", collapsed);
+
+    sidebarToggle.setAttribute(
+        "aria-label",
+        collapsed ? "Expand sidebar" : "Collapse sidebar"
+    );
+
+    sidebarToggle.setAttribute(
+        "title",
+        collapsed ? "Expand sidebar" : "Collapse sidebar"
+    );
+}
+
+function loadSidebarState() {
+    const savedState =
+        localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+
+    applySidebarState(savedState === "true");
+}
+
+if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const collapsed =
+            !appShell.classList.contains("sidebar-collapsed");
+
+        applySidebarState(collapsed);
+
+        localStorage.setItem(
+            SIDEBAR_COLLAPSED_STORAGE_KEY,
+            String(collapsed)
+        );
+    });
+}
+
+loadSidebarState();
 const pageSections = {
     home: document.querySelector("#home-section"),
     favorites: document.querySelector("#favorites-section"),
@@ -2139,7 +2185,7 @@ function createCard(item) {
     } else {
         icon.textContent =
             item.type === "website" ? "🌐" :
-            item.type === "webapp" ? "◉" : "▦";
+                item.type === "webapp" ? "◉" : "▦";
     }
 
     const cardTypeLabel = isMissingApplication ? "Application Missing" : item.type;
@@ -2209,74 +2255,74 @@ async function openItem(item) {
     openingItems.add(openKey);
 
     try {
-    if (item.type === "website") {
-        const opened = await window.launcherAPI.openWebsite(item.target);
-        if (!opened) {
-            showMessage("Open Failed", "The website could not be opened.");
-        }
-        return;
-    }
-
-    if (item.type === "webapp") {
-        const result = await window.launcherAPI.openWebApp(item.id, item.name, item.target);
-        if (!result || !result.success) {
-            showMessage("Web App Not Available", result && result.message ? result.message : "The web app could not be opened.");
-        }
-        return;
-    }
-
-    if (item.type === "application") {
-        let applicationCheck;
-
-        try {
-            applicationCheck =
-                await window.launcherAPI.checkApplication(
-                    item.target
-                );
-        } catch {
-            applicationCheck = {
-                valid: false,
-                exists: false
-            };
-        }
-
-        if (
-            !applicationCheck ||
-            !applicationCheck.valid ||
-            !applicationCheck.exists
-        ) {
-            item.missing = true;
-            renderItems();
-
-            showMessage(
-                "Application Missing",
-                `"${item.name}" could not be found. The executable may have been moved or deleted.`
-            );
-
+        if (item.type === "website") {
+            const opened = await window.launcherAPI.openWebsite(item.target);
+            if (!opened) {
+                showMessage("Open Failed", "The website could not be opened.");
+            }
             return;
         }
 
-        if (item.missing) {
-            item.missing = false;
-            renderItems();
+        if (item.type === "webapp") {
+            const result = await window.launcherAPI.openWebApp(item.id, item.name, item.target);
+            if (!result || !result.success) {
+                showMessage("Web App Not Available", result && result.message ? result.message : "The web app could not be opened.");
+            }
+            return;
         }
 
-        const result =
-            await window.launcherAPI.openApplication(
-                item.target
-            );
+        if (item.type === "application") {
+            let applicationCheck;
 
-        if (!result || !result.success) {
-            showMessage(
-                "Application Not Available",
-                result && result.message
-                    ? result.message
-                    : "The application could not be opened."
-            );
+            try {
+                applicationCheck =
+                    await window.launcherAPI.checkApplication(
+                        item.target
+                    );
+            } catch {
+                applicationCheck = {
+                    valid: false,
+                    exists: false
+                };
+            }
+
+            if (
+                !applicationCheck ||
+                !applicationCheck.valid ||
+                !applicationCheck.exists
+            ) {
+                item.missing = true;
+                renderItems();
+
+                showMessage(
+                    "Application Missing",
+                    `"${item.name}" could not be found. The executable may have been moved or deleted.`
+                );
+
+                return;
+            }
+
+            if (item.missing) {
+                item.missing = false;
+                renderItems();
+            }
+
+            const result =
+                await window.launcherAPI.openApplication(
+                    item.target
+                );
+
+            if (!result || !result.success) {
+                showMessage(
+                    "Application Not Available",
+                    result && result.message
+                        ? result.message
+                        : "The application could not be opened."
+                );
+            }
+
+            return;
         }
-
-        return;
-    }
     } finally {
         openingItems.delete(openKey);
     }
