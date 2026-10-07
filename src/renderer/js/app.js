@@ -235,55 +235,6 @@ function getDefaultSettings() {
     };
 }
 
-function openResetConfirmation(type) {
-    const isSettingsReset = type === "settings";
-
-    confirmDialogTitle.textContent = isSettingsReset
-        ? "Reset Settings?"
-        : "Reset All Data?";
-
-    confirmDialogText.textContent = isSettingsReset
-        ? "Only your launcher settings will be restored to their default values. Your saved items will not be deleted."
-        : "This will remove all saved websites, web apps, applications, and settings. This action cannot be undone.";
-
-    confirmDialogConfirm.textContent = isSettingsReset
-        ? "Reset Settings"
-        : "Reset All";
-
-    confirmDialogConfirm.classList.toggle("danger", !isSettingsReset);
-    confirmDialog.dataset.action = type;
-    confirmDialog.style.display = "flex";
-}
-
-function closeConfirmDialog() {
-    confirmDialog.style.display = "none";
-    confirmDialog.dataset.action = "";
-}
-
-async function handleConfirmAction() {
-    const action = confirmDialog.dataset.action;
-    closeConfirmDialog();
-
-    if (action === "settings") {
-        appSettings = getDefaultSettings();
-        localStorage.removeItem(SETTINGS_STORAGE_KEY);
-        applySettings();
-        showMessage("Settings Reset", "Settings have been restored to their default values.");
-        return;
-    }
-
-    if (action === "all") {
-        launcherItems = [];
-        appSettings = getDefaultSettings();
-        localStorage.removeItem(SETTINGS_STORAGE_KEY);
-        await saveLauncherItems(launcherItems);
-        applySettings();
-        renderItems();
-        showMessage("Reset Complete", "All launcher items and settings have been reset.");
-    }
-}
-
-
 /* ==============================
    Elements
 ================================= */
