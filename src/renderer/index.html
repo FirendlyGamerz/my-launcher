@@ -79,6 +79,14 @@
                 <a
                     href="#"
                     class="nav-item"
+                    data-section="categories"
+                >
+                    Categories
+                </a>
+
+                <a
+                    href="#"
+                    class="nav-item"
                     data-section="settings"
                 >
                     Settings
@@ -324,6 +332,59 @@
             </section>
 
 
+            <!-- Categories -->
+
+            <section
+                class="page-section"
+                id="categories-section"
+            >
+
+                <div class="dashboard categories-dashboard">
+
+                    <div class="dashboard-header categories-header">
+
+                        <div>
+                            <h2>Categories</h2>
+                            <p>Organize your launcher items into groups</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="category-add-button"
+                            id="add-category-button"
+                        >
+                            + Add Category
+                        </button>
+
+                    </div>
+
+                    <div
+                        class="categories-empty-state"
+                        id="categories-empty-state"
+                    >
+                        <div class="categories-empty-icon">+</div>
+
+                        <button
+                            type="button"
+                            class="category-empty-button"
+                            id="add-category-empty-button"
+                        >
+                            + Add Category
+                        </button>
+
+                        <p>Create categories to organize your apps in groups</p>
+                    </div>
+
+                    <div
+                        class="categories-grid"
+                        id="categories-grid"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
             <!-- Settings -->
 
             <section
@@ -528,6 +589,71 @@
             </section>
 
         </main>
+
+
+        <!-- Category Dialog -->
+
+        <div
+            class="category-dialog"
+            id="category-dialog"
+        >
+
+            <div class="category-dialog-box">
+
+                <div class="dialog-header">
+
+                    <h3>Add Category</h3>
+
+                    <button
+                        type="button"
+                        class="close-button"
+                        id="close-category-dialog"
+                    >
+                        &times;
+                    </button>
+
+                </div>
+
+                <form
+                    class="category-form"
+                    id="category-form"
+                >
+
+                    <div class="dialog-content">
+
+                        <div class="form-group">
+                            <label for="category-name">Category Name</label>
+
+                            <input
+                                type="text"
+                                id="category-name"
+                                placeholder="e.g. Work"
+                                maxlength="40"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="form-cancel"
+                                id="cancel-category"
+                            >
+                                Cancel
+                            </button>
+
+                            <button type="submit">
+                                Add Category
+                            </button>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
 
 
         <!-- Add / Edit Dialog -->
