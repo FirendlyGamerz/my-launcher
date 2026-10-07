@@ -1671,11 +1671,12 @@ function renderItems() {
     }
 
     sortedItems.forEach((item) => {
-        // Items that belong to a category are category copies.
-        // They should not appear again on the main Home page.
-        if (item.categoryId === undefined || item.categoryId === null) {
-            homeGrid.appendChild(createCard(item));
+        // Category copies are shown only inside their category.
+        if (item.categoryId !== undefined && item.categoryId !== null) {
+            return;
         }
+
+        homeGrid.appendChild(createCard(item));
 
         if (item.type === "website") {
             categoryGrids.websites.appendChild(createCard(item));
@@ -1695,7 +1696,11 @@ function renderItems() {
         }
     });
 
-    homeEmptyState.style.display = launcherItems.length === 0 ? "flex" : "none";
+    const originalItemsCount = launcherItems.filter(
+        (item) => item.categoryId === undefined || item.categoryId === null
+    ).length;
+
+    homeEmptyState.style.display = originalItemsCount === 0 ? "flex" : "none";
     renderCategories();
 }
 
