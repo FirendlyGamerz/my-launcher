@@ -14,6 +14,9 @@ let deleteTargetItem = null;
 let editingItemId = null;
 let editingCategoryItemId = null;
 let pendingNewItemCategorySelect = null;
+let pendingNewCategoryType = null;
+let pendingNewCategorySelectedIds = [];
+let editingCategoriesItem = null;
 
 
 /* ==============================
@@ -792,27 +795,36 @@ function createCategory() {
             : null;
 
     closeCategoryDialogDialog();
-    refreshAllAddCategorySelects();
+    refreshAllAddCategoryControls();
 
     if (
         createdCategoryId !== undefined &&
         createdCategoryId !== null &&
-        pendingNewItemCategorySelect
+        pendingNewCategoryType
     ) {
-        pendingNewItemCategorySelect.value = String(createdCategoryId);
+        const ids = [
+            ...pendingNewCategorySelectedIds,
+            Number(createdCategoryId)
+        ].filter((id, index, arr) => arr.indexOf(id) === index);
 
-        const type = Object.keys(addCategoryControls).find(
-            (key) =>
-                addCategoryControls[key].select === pendingNewItemCategorySelect
-        );
-
-        if (type) {
-            addCategoryControls[type].toggle.checked = true;
-            addCategoryControls[type].row.style.display = "block";
+        if (pendingNewCategoryType === "item") {
+            renderMultiCategoryMenu(
+                itemCategoriesMenu,
+                ids,
+                "item",
+                (selected) => updateMultiCategoryTrigger(itemCategoriesTrigger, selected)
+            );
+            updateMultiCategoryTrigger(itemCategoriesTrigger, ids);
+        } else if (addCategoryControls[pendingNewCategoryType]) {
+            const controls = addCategoryControls[pendingNewCategoryType];
+            controls.toggle.checked = true;
+            controls.row.style.display = "block";
+            refreshAddCategoryControls(pendingNewCategoryType, ids);
         }
-
-        pendingNewItemCategorySelect = null;
     }
+
+    pendingNewCategoryType = null;
+    pendingNewCategorySelectedIds = [];
 
     renderCategories();
 }
@@ -892,6 +904,7 @@ const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
 const contextRepair = document.querySelector("#context-repair");
 const contextEdit = contextMenu?.querySelector('[data-action="edit"]');
+const contextAddCategories = contextMenu?.querySelector('[data-action="add-categories"]');
 const contextDelete = contextMenu?.querySelector('[data-action="delete"]');
 const contextSeparators = contextMenu
     ? contextMenu.querySelectorAll(".context-menu-separator")
@@ -903,6 +916,13 @@ const categoryItemNameForm = document.querySelector("#category-item-name-form");
 const categoryItemNameInput = document.querySelector("#category-item-name");
 const closeCategoryItemNameDialogButton = document.querySelector("#close-category-item-name-dialog");
 const cancelCategoryItemName = document.querySelector("#cancel-category-item-name");
+
+const itemCategoriesDialog = document.querySelector("#item-categories-dialog");
+const closeItemCategoriesDialogButton = document.querySelector("#close-item-categories-dialog");
+const cancelItemCategories = document.querySelector("#cancel-item-categories");
+const saveItemCategories = document.querySelector("#save-item-categories");
+const itemCategoriesTrigger = document.querySelector("#item-categories-trigger");
+const itemCategoriesMenu = document.querySelector("#item-categories-menu");
 const sortSelect = document.querySelector("#sort-select");
 
 
@@ -1059,65 +1079,137 @@ const addCategoryControls = {
     website: {
         toggle: document.querySelector("#website-category-toggle"),
         row: document.querySelector("#website-category-select-row"),
-        select: document.querySelector("#website-category-select")
+        trigger: document.querySelector("#website-category-trigger"),
+        menu: document.querySelector("#website-category-menu")
     },
     webapp: {
         toggle: document.querySelector("#webapp-category-toggle"),
         row: document.querySelector("#webapp-category-select-row"),
-        select: document.querySelector("#webapp-category-select")
+        trigger: document.querySelector("#webapp-category-trigger"),
+        menu: document.querySelector("#webapp-category-menu")
     },
     application: {
         toggle: document.querySelector("#application-category-toggle"),
         row: document.querySelector("#application-category-select-row"),
-        select: document.querySelector("#application-category-select")
+        trigger: document.querySelector("#application-category-trigger"),
+        menu: document.querySelector("#application-category-menu")
     }
 };
 
-function refreshAddCategorySelect(type, selectedId = "") {
-    const controls = addCategoryControls[type];
-    if (!controls?.select) return;
-
-    controls.select.innerHTML = "";
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Select a category";
-    controls.select.appendChild(placeholder);
-
-    const newCategory = document.createElement("option");
-    newCategory.value = "__new__";
-    newCategory.textContent = "+ New Category";
-    controls.select.appendChild(newCategory);
-
-    launcherCategories.forEach((category) => {
-        const option = document.createElement("option");
-        option.value = String(category.id);
-        option.textContent = category.name;
-        controls.select.appendChild(option);
+function closeAllCategoryDropdowns() {
+    document.querySelectorAll(".multi-category-menu.open").forEach((menu) => {
+        menu.classList.remove("open");
     });
-
-    controls.select.value =
-        selectedId === "" || selectedId === null || selectedId === undefined
-            ? ""
-            : String(selectedId);
 }
 
-function refreshAllAddCategorySelects() {
+function updateMultiCategoryTrigger(trigger, selectedIds) {
+    if (!trigger) return;
+    const text = trigger.querySelector("span");
+    if (!text) return;
+
+    if (selectedIds.length === 0) {
+        text.textContent = "Select categories";
+        return;
+    }
+
+    if (selectedIds.length === 1) {
+        const category = launcherCategories.find(
+            (entry) => Number(entry.id) === Number(selectedIds[0])
+        );
+        text.textContent = category ? category.name : "1 category selected";
+        return;
+    }
+
+    text.textContent = selectedIds.length + " categories selected";
+}
+
+function getCheckedCategoryIds(menu) {
+    if (!menu) return [];
+    return Array.from(
+        menu.querySelectorAll('input[type="checkbox"]:checked')
+    ).map((input) => Number(input.value));
+}
+
+function renderMultiCategoryMenu(menu, selectedIds = [], mode = "add", onChange = null) {
+    if (!menu) return;
+    menu.innerHTML = "";
+
+    const newButton = document.createElement("button");
+    newButton.type = "button";
+    newButton.className = "multi-category-new";
+    newButton.textContent = "+ New Category";
+    newButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        if (mode === "item") {
+            editingCategoriesItem = editingCategoriesItem || null;
+            pendingNewCategoryType = "item";
+        } else {
+            pendingNewCategoryType = mode;
+        }
+
+        pendingNewCategorySelectedIds = [...getCheckedCategoryIds(menu)];
+        closeAllCategoryDropdowns();
+        openCategoryDialog();
+    });
+    menu.appendChild(newButton);
+
+    if (launcherCategories.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "multi-category-empty";
+        empty.textContent = "No categories available.";
+        menu.appendChild(empty);
+        return;
+    }
+
+    launcherCategories.forEach((category) => {
+        const label = document.createElement("label");
+        label.className = "multi-category-option";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = String(category.id);
+        checkbox.checked = selectedIds.some(
+            (id) => Number(id) === Number(category.id)
+        );
+
+        checkbox.addEventListener("change", () => {
+            if (onChange) onChange(getCheckedCategoryIds(menu));
+        });
+
+        const name = document.createElement("span");
+        name.textContent = category.name;
+
+        label.appendChild(checkbox);
+        label.appendChild(name);
+        menu.appendChild(label);
+    });
+}
+
+function refreshAddCategoryControls(type, selectedIds = []) {
+    const controls = addCategoryControls[type];
+    if (!controls) return;
+
+    renderMultiCategoryMenu(
+        controls.menu,
+        selectedIds,
+        type,
+        (ids) => updateMultiCategoryTrigger(controls.trigger, ids)
+    );
+    updateMultiCategoryTrigger(controls.trigger, selectedIds);
+}
+
+function refreshAllAddCategoryControls() {
     Object.keys(addCategoryControls).forEach((type) => {
-        refreshAddCategorySelect(type);
+        refreshAddCategoryControls(type);
     });
 }
 
 function resetAddCategoryControls() {
-    Object.values(addCategoryControls).forEach((controls) => {
-        if (!controls) return;
-        if (controls.toggle) controls.toggle.checked = false;
-        if (controls.row) controls.row.style.display = "none";
-        refreshAddCategorySelect(
-            Object.keys(addCategoryControls).find(
-                (type) => addCategoryControls[type] === controls
-            )
-        );
+    Object.entries(addCategoryControls).forEach(([type, controls]) => {
+        controls.toggle.checked = false;
+        controls.row.style.display = "none";
+        refreshAddCategoryControls(type, []);
     });
 }
 
@@ -1128,36 +1220,23 @@ function setAddCategoryModeVisible(visible) {
     });
 }
 
-function getAddCategoryId(type) {
+function getAddCategoryIds(type) {
     const controls = addCategoryControls[type];
-    if (!controls?.toggle?.checked || !controls?.select) return null;
-
-    const value = controls.select.value;
-    return value && value !== "__new__" ? Number(value) : null;
-}
-
-function openNewCategoryForAddItem(select) {
-    pendingNewItemCategorySelect = select;
-    openCategoryDialog();
+    if (!controls?.toggle?.checked) return [];
+    return getCheckedCategoryIds(controls.menu);
 }
 
 Object.entries(addCategoryControls).forEach(([type, controls]) => {
-    if (!controls?.toggle || !controls?.row || !controls?.select) return;
-
     controls.toggle.addEventListener("change", () => {
         controls.row.style.display = controls.toggle.checked ? "block" : "none";
-
-        if (controls.toggle.checked) {
-            refreshAddCategorySelect(type);
-        } else {
-            controls.select.value = "";
-        }
+        if (controls.toggle.checked) refreshAddCategoryControls(type);
     });
 
-    controls.select.addEventListener("change", () => {
-        if (controls.select.value === "__new__") {
-            openNewCategoryForAddItem(controls.select);
-        }
+    controls.trigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = controls.menu.classList.contains("open");
+        closeAllCategoryDropdowns();
+        controls.menu.classList.toggle("open", !open);
     });
 });
 
@@ -1328,6 +1407,14 @@ function findDuplicateWebApp(url, ignoredItemId = null) {
 function addItemToCategory(originalItem, categoryId) {
     if (categoryId === null || categoryId === undefined) return;
 
+    const exists = launcherItems.some(
+        (entry) =>
+            entry.sourceItemId === originalItem.id &&
+            Number(entry.categoryId) === Number(categoryId)
+    );
+
+    if (exists) return;
+
     launcherItems.push({
         ...originalItem,
         id: Date.now() + Math.floor(Math.random() * 100000),
@@ -1360,6 +1447,13 @@ websiteForm.addEventListener("submit", async (event) => {
     }
 
     const duplicate = findDuplicateWebsite(normalizedUrl, editingItemId);
+    if (duplicate && pendingCategoryId !== null && editingItemId === null) {
+        showMessage(
+            "Already Exists",
+            `"${duplicate.name}" is already exists. Please import from launcher.`
+        );
+        return;
+    }
     if (duplicate) {
         showMessage("Already Added", `"${duplicate.name}" is already saved with this website address.`);
         return;
@@ -1420,7 +1514,7 @@ websiteForm.addEventListener("submit", async (event) => {
         // A normal Home "+ Add" keeps the original on Home and creates
         // a separate category copy when the Category toggle is enabled.
         if (pendingCategoryId === null) {
-            addItemToCategory(originalItem, getAddCategoryId("website"));
+            getAddCategoryIds("website").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
 
@@ -1458,6 +1552,13 @@ webappForm.addEventListener("submit", async (event) => {
     }
 
     const duplicate = findDuplicateWebApp(normalizedUrl, editingItemId);
+    if (duplicate && pendingCategoryId !== null && editingItemId === null) {
+        showMessage(
+            "Already Exists",
+            `"${duplicate.name}" is already exists. Please import from launcher.`
+        );
+        return;
+    }
     if (duplicate) {
         showMessage("Already Added", `"${duplicate.name}" is already saved with this web app address.`);
         return;
@@ -1513,7 +1614,7 @@ webappForm.addEventListener("submit", async (event) => {
         // A normal Home "+ Add" keeps the original on Home and creates
         // a separate category copy when the Category toggle is enabled.
         if (pendingCategoryId === null) {
-            addItemToCategory(originalItem, getAddCategoryId("webapp"));
+            getAddCategoryIds("webapp").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
 
@@ -1640,7 +1741,7 @@ applicationForm.addEventListener("submit", async (event) => {
         // A normal Home "+ Add" keeps the original on Home and creates
         // a separate category copy when the Category toggle is enabled.
         if (pendingCategoryId === null) {
-            addItemToCategory(originalItem, getAddCategoryId("application"));
+            getAddCategoryIds("application").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
 
@@ -2106,6 +2207,109 @@ async function removeItemFromCategory(item) {
     renderItems();
 }
 
+function getCategoryCopiesForItem(itemId) {
+    return launcherItems.filter(
+        (entry) =>
+            entry.sourceItemId === itemId &&
+            entry.categoryId !== undefined &&
+            entry.categoryId !== null
+    );
+}
+
+function openItemCategoriesDialog(item) {
+    editingCategoriesItem = item;
+    const selectedIds = getCategoryCopiesForItem(item.id).map(
+        (entry) => Number(entry.categoryId)
+    );
+
+    renderMultiCategoryMenu(
+        itemCategoriesMenu,
+        selectedIds,
+        "item",
+        (ids) => updateMultiCategoryTrigger(itemCategoriesTrigger, ids)
+    );
+    updateMultiCategoryTrigger(itemCategoriesTrigger, selectedIds);
+    itemCategoriesDialog.style.display = "flex";
+}
+
+function closeItemCategoriesDialog() {
+    itemCategoriesDialog.style.display = "none";
+    editingCategoriesItem = null;
+    closeAllCategoryDropdowns();
+}
+
+async function syncItemCategories(item, selectedIds) {
+    if (!item) return false;
+
+    const oldItems = [...launcherItems];
+    const selected = [...new Set(selectedIds.map(Number))];
+
+    launcherItems = launcherItems.filter((entry) => {
+        if (entry.sourceItemId !== item.id) return true;
+        return selected.includes(Number(entry.categoryId));
+    });
+
+    selected.forEach((categoryId) => {
+        const exists = launcherItems.some(
+            (entry) =>
+                entry.sourceItemId === item.id &&
+                Number(entry.categoryId) === categoryId
+        );
+
+        if (!exists) {
+            launcherItems.push({
+                ...item,
+                id: Date.now() + Math.floor(Math.random() * 1000000),
+                categoryId,
+                sourceItemId: item.id
+            });
+        }
+    });
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage("Save Failed", "The category changes could not be saved.");
+        return false;
+    }
+
+    renderItems();
+    return true;
+}
+
+if (itemCategoriesTrigger) {
+    itemCategoriesTrigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = itemCategoriesMenu.classList.contains("open");
+        closeAllCategoryDropdowns();
+        itemCategoriesMenu.classList.toggle("open", !open);
+    });
+}
+
+if (closeItemCategoriesDialogButton) {
+    closeItemCategoriesDialogButton.addEventListener("click", closeItemCategoriesDialog);
+}
+
+if (cancelItemCategories) {
+    cancelItemCategories.addEventListener("click", closeItemCategoriesDialog);
+}
+
+if (itemCategoriesDialog) {
+    itemCategoriesDialog.addEventListener("click", (event) => {
+        if (event.target === itemCategoriesDialog) closeItemCategoriesDialog();
+    });
+}
+
+if (saveItemCategories) {
+    saveItemCategories.addEventListener("click", async () => {
+        if (!editingCategoriesItem) return;
+        const selectedIds = getCheckedCategoryIds(itemCategoriesMenu);
+        const ok = await syncItemCategories(editingCategoriesItem, selectedIds);
+        if (ok) closeItemCategoriesDialog();
+    });
+}
+
 /* ==============================
    Context Menu & Actions
 ================================= */
@@ -2122,8 +2326,18 @@ function openContextMenu(item, x, y) {
             isCategoryItem ? "Edit Name" : "Edit";
     }
 
+    if (contextAddCategories) {
+        contextAddCategories.style.display = isCategoryItem ? "none" : "flex";
+    }
+
     if (contextFavorite) {
         contextFavorite.style.display = isCategoryItem ? "none" : "flex";
+        const favoriteLabel = contextFavorite.querySelector("span");
+        if (favoriteLabel) {
+            favoriteLabel.textContent = item.favorite
+                ? "Remove from Favorites"
+                : "Add to Favorites";
+        }
     }
 
     if (contextRepair) {
@@ -2214,6 +2428,10 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
             } else {
                 editItem(item);
             }
+        } else if (action === "add-categories") {
+            if (item.categoryId === undefined || item.categoryId === null) {
+                openItemCategoriesDialog(item);
+            }
         } else if (action === "repair") {
             await repairApplication(item);
         } else if (action === "favorite") {
@@ -2246,6 +2464,8 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
 
 function editItem(item) {
     editingItemId = item.id;
+    setAddCategoryModeVisible(false);
+    resetAddCategoryControls();
     itemTypeSelection.style.display = "none";
 
     if (item.type === "website") {
