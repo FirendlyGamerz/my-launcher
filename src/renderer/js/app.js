@@ -12,6 +12,8 @@ let contextMenuItem = null;
 let deleteTargetItem = null;
 
 let editingItemId = null;
+let editingCategoryItemId = null;
+let pendingNewItemCategorySelect = null;
 
 
 /* ==============================
@@ -304,6 +306,7 @@ function closeCategorySourceDialogDialog(keepPendingCategory = false) {
 function openCategoryNewFlow() {
     closeCategorySourceDialogDialog(true);
     openAddDialog();
+    setAddCategoryModeVisible(false);
     document.querySelector(".dialog-header h3").textContent =
         "Add Item to Category";
 }
@@ -783,7 +786,34 @@ function createCategory() {
         }
     }
 
+    const createdCategoryId =
+        editingCategoryId === null
+            ? launcherCategories[launcherCategories.length - 1]?.id
+            : null;
+
     closeCategoryDialogDialog();
+    refreshAllAddCategorySelects();
+
+    if (
+        createdCategoryId !== undefined &&
+        createdCategoryId !== null &&
+        pendingNewItemCategorySelect
+    ) {
+        pendingNewItemCategorySelect.value = String(createdCategoryId);
+
+        const type = Object.keys(addCategoryControls).find(
+            (key) =>
+                addCategoryControls[key].select === pendingNewItemCategorySelect
+        );
+
+        if (type) {
+            addCategoryControls[type].toggle.checked = true;
+            addCategoryControls[type].row.style.display = "block";
+        }
+
+        pendingNewItemCategorySelect = null;
+    }
+
     renderCategories();
 }
 
@@ -861,7 +891,18 @@ const contextMenu = document.querySelector("#context-menu");
 const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
 const contextRepair = document.querySelector("#context-repair");
+const contextEdit = contextMenu?.querySelector('[data-action="edit"]');
+const contextDelete = contextMenu?.querySelector('[data-action="delete"]');
+const contextSeparators = contextMenu
+    ? contextMenu.querySelectorAll(".context-menu-separator")
+    : [];
 const searchInput = document.querySelector("#search-input");
+
+const categoryItemNameDialog = document.querySelector("#category-item-name-dialog");
+const categoryItemNameForm = document.querySelector("#category-item-name-form");
+const categoryItemNameInput = document.querySelector("#category-item-name");
+const closeCategoryItemNameDialogButton = document.querySelector("#close-category-item-name-dialog");
+const cancelCategoryItemName = document.querySelector("#cancel-category-item-name");
 const sortSelect = document.querySelector("#sort-select");
 
 
@@ -1011,6 +1052,116 @@ confirmDialog.addEventListener("click", (event) => {
 
 
 /* ==============================
+   Add Item Category Controls
+================================= */
+
+const addCategoryControls = {
+    website: {
+        toggle: document.querySelector("#website-category-toggle"),
+        row: document.querySelector("#website-category-select-row"),
+        select: document.querySelector("#website-category-select")
+    },
+    webapp: {
+        toggle: document.querySelector("#webapp-category-toggle"),
+        row: document.querySelector("#webapp-category-select-row"),
+        select: document.querySelector("#webapp-category-select")
+    },
+    application: {
+        toggle: document.querySelector("#application-category-toggle"),
+        row: document.querySelector("#application-category-select-row"),
+        select: document.querySelector("#application-category-select")
+    }
+};
+
+function refreshAddCategorySelect(type, selectedId = "") {
+    const controls = addCategoryControls[type];
+    if (!controls?.select) return;
+
+    controls.select.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a category";
+    controls.select.appendChild(placeholder);
+
+    const newCategory = document.createElement("option");
+    newCategory.value = "__new__";
+    newCategory.textContent = "+ New Category";
+    controls.select.appendChild(newCategory);
+
+    launcherCategories.forEach((category) => {
+        const option = document.createElement("option");
+        option.value = String(category.id);
+        option.textContent = category.name;
+        controls.select.appendChild(option);
+    });
+
+    controls.select.value =
+        selectedId === "" || selectedId === null || selectedId === undefined
+            ? ""
+            : String(selectedId);
+}
+
+function refreshAllAddCategorySelects() {
+    Object.keys(addCategoryControls).forEach((type) => {
+        refreshAddCategorySelect(type);
+    });
+}
+
+function resetAddCategoryControls() {
+    Object.values(addCategoryControls).forEach((controls) => {
+        if (!controls) return;
+        if (controls.toggle) controls.toggle.checked = false;
+        if (controls.row) controls.row.style.display = "none";
+        refreshAddCategorySelect(
+            Object.keys(addCategoryControls).find(
+                (type) => addCategoryControls[type] === controls
+            )
+        );
+    });
+}
+
+function setAddCategoryModeVisible(visible) {
+    Object.values(addCategoryControls).forEach((controls) => {
+        const group = controls?.toggle?.closest(".add-category-group");
+        if (group) group.style.display = visible ? "" : "none";
+    });
+}
+
+function getAddCategoryId(type) {
+    const controls = addCategoryControls[type];
+    if (!controls?.toggle?.checked || !controls?.select) return null;
+
+    const value = controls.select.value;
+    return value && value !== "__new__" ? Number(value) : null;
+}
+
+function openNewCategoryForAddItem(select) {
+    pendingNewItemCategorySelect = select;
+    openCategoryDialog();
+}
+
+Object.entries(addCategoryControls).forEach(([type, controls]) => {
+    if (!controls?.toggle || !controls?.row || !controls?.select) return;
+
+    controls.toggle.addEventListener("change", () => {
+        controls.row.style.display = controls.toggle.checked ? "block" : "none";
+
+        if (controls.toggle.checked) {
+            refreshAddCategorySelect(type);
+        } else {
+            controls.select.value = "";
+        }
+    });
+
+    controls.select.addEventListener("change", () => {
+        if (controls.select.value === "__new__") {
+            openNewCategoryForAddItem(controls.select);
+        }
+    });
+});
+
+/* ==============================
    Add / Edit Dialog
 ================================= */
 
@@ -1033,6 +1184,8 @@ function openAddDialog() {
     websiteForm.reset();
     webappForm.reset();
     applicationForm.reset();
+    resetAddCategoryControls();
+    setAddCategoryModeVisible(true);
 
     addDialog.style.display = "flex";
 }
@@ -1052,7 +1205,10 @@ function closeAddDialog() {
     websiteForm.reset();
     webappForm.reset();
     applicationForm.reset();
+    resetAddCategoryControls();
+    setAddCategoryModeVisible(true);
     pendingCategoryId = null;
+    pendingNewItemCategorySelect = null;
 }
 
 if (addButton) addButton.addEventListener("click", openAddDialog);
@@ -1169,6 +1325,18 @@ function findDuplicateWebApp(url, ignoredItemId = null) {
 }
 
 
+function addItemToCategory(originalItem, categoryId) {
+    if (categoryId === null || categoryId === undefined) return;
+
+    launcherItems.push({
+        ...originalItem,
+        id: Date.now() + Math.floor(Math.random() * 100000),
+        categoryId,
+        sourceItemId: originalItem.id
+    });
+}
+
+
 /* ==============================
    Website Form Submit
 ================================= */
@@ -1233,17 +1401,27 @@ websiteForm.addEventListener("submit", async (event) => {
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
     } else {
-        launcherItems.push({
+        const originalItem = {
             id: Date.now(),
             name: name,
             type: "website",
             target: websiteCheck.url,
             favorite: favorite,
-            favicon: favicon || null,
-            ...(pendingCategoryId !== null
-                ? { categoryId: pendingCategoryId }
-                : {})
-        });
+            favicon: favicon || null
+        };
+
+        if (pendingCategoryId !== null) {
+            // Preserve the existing "+ New" flow from inside a category.
+            originalItem.categoryId = pendingCategoryId;
+        }
+
+        launcherItems.push(originalItem);
+
+        // A normal Home "+ Add" keeps the original on Home and creates
+        // a separate category copy when the Category toggle is enabled.
+        if (pendingCategoryId === null) {
+            addItemToCategory(originalItem, getAddCategoryId("website"));
+        }
     }
 
     const saved = await saveLauncherItems(launcherItems);
@@ -1316,17 +1494,27 @@ webappForm.addEventListener("submit", async (event) => {
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
     } else {
-        launcherItems.push({
+        const originalItem = {
             id: Date.now(),
             name: name,
             type: "webapp",
             target: websiteCheck.url,
             favorite: favorite,
-            favicon: favicon || null,
-            ...(pendingCategoryId !== null
-                ? { categoryId: pendingCategoryId }
-                : {})
-        });
+            favicon: favicon || null
+        };
+
+        if (pendingCategoryId !== null) {
+            // Preserve the existing "+ New" flow from inside a category.
+            originalItem.categoryId = pendingCategoryId;
+        }
+
+        launcherItems.push(originalItem);
+
+        // A normal Home "+ Add" keeps the original on Home and creates
+        // a separate category copy when the Category toggle is enabled.
+        if (pendingCategoryId === null) {
+            addItemToCategory(originalItem, getAddCategoryId("webapp"));
+        }
     }
 
     const saved = await saveLauncherItems(launcherItems);
@@ -1433,17 +1621,27 @@ applicationForm.addEventListener("submit", async (event) => {
             item.favicon = applicationIcon;
         }
     } else {
-        launcherItems.push({
+        const originalItem = {
             id: Date.now(),
             name: name,
             type: "application",
             target: applicationPath,
             favorite: favorite,
-            favicon: applicationIcon || null,
-            ...(pendingCategoryId !== null
-                ? { categoryId: pendingCategoryId }
-                : {})
-        });
+            favicon: applicationIcon || null
+        };
+
+        if (pendingCategoryId !== null) {
+            // Preserve the existing "+ New" flow from inside a category.
+            originalItem.categoryId = pendingCategoryId;
+        }
+
+        launcherItems.push(originalItem);
+
+        // A normal Home "+ Add" keeps the original on Home and creates
+        // a separate category copy when the Category toggle is enabled.
+        if (pendingCategoryId === null) {
+            addItemToCategory(originalItem, getAddCategoryId("application"));
+        }
     }
 
     const saved = await saveLauncherItems(launcherItems);
@@ -1807,21 +2005,152 @@ async function repairApplication(item) {
 }
 
 
+function openCategoryItemNameDialog(item) {
+    editingCategoryItemId = item.id;
+    categoryItemNameInput.value = item.name || "";
+    categoryItemNameDialog.style.display = "flex";
+    categoryItemNameInput.focus();
+    categoryItemNameInput.select();
+}
+
+function closeCategoryItemNameDialog() {
+    categoryItemNameDialog.style.display = "none";
+    editingCategoryItemId = null;
+    categoryItemNameInput.value = "";
+}
+
+if (closeCategoryItemNameDialogButton) {
+    closeCategoryItemNameDialogButton.addEventListener(
+        "click",
+        closeCategoryItemNameDialog
+    );
+}
+
+if (cancelCategoryItemName) {
+    cancelCategoryItemName.addEventListener(
+        "click",
+        closeCategoryItemNameDialog
+    );
+}
+
+if (categoryItemNameDialog) {
+    categoryItemNameDialog.addEventListener("click", (event) => {
+        if (event.target === categoryItemNameDialog) {
+            closeCategoryItemNameDialog();
+        }
+    });
+}
+
+if (categoryItemNameForm) {
+    categoryItemNameForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (editingCategoryItemId === null) return;
+
+        const item = launcherItems.find(
+            (entry) => entry.id === editingCategoryItemId
+        );
+
+        if (!item || item.categoryId === undefined || item.categoryId === null) {
+            closeCategoryItemNameDialog();
+            return;
+        }
+
+        const newName = categoryItemNameInput.value.trim();
+
+        if (!newName) {
+            showMessage("Name Required", "Please enter a name.");
+            return;
+        }
+
+        const oldName = item.name;
+        item.name = newName;
+
+        const saved = await saveLauncherItems(launcherItems);
+
+        if (!saved) {
+            item.name = oldName;
+            showMessage(
+                "Save Failed",
+                "The category item name could not be updated."
+            );
+            return;
+        }
+
+        closeCategoryItemNameDialog();
+        renderItems();
+    });
+}
+
+async function removeItemFromCategory(item) {
+    if (!item || item.categoryId === undefined || item.categoryId === null) {
+        return;
+    }
+
+    const oldItems = [...launcherItems];
+    launcherItems = launcherItems.filter(
+        (entry) => entry.id !== item.id
+    );
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Remove Failed",
+            "The item could not be removed from this category."
+        );
+        return;
+    }
+
+    renderItems();
+}
+
 /* ==============================
    Context Menu & Actions
 ================================= */
 
 function openContextMenu(item, x, y) {
     contextMenuItem = item;
-    contextFavorite.textContent = item.favorite ? "Remove from Favorites" : "Add to Favorites";
-    contextCopy.textContent = item.type === "application" ? "Copy Path" : "Copy URL";
+
+    const isCategoryItem =
+        item.categoryId !== undefined &&
+        item.categoryId !== null;
+
+    if (contextEdit) {
+        contextEdit.querySelector("span").textContent =
+            isCategoryItem ? "Edit Name" : "Edit";
+    }
+
+    if (contextFavorite) {
+        contextFavorite.style.display = isCategoryItem ? "none" : "flex";
+    }
 
     if (contextRepair) {
         contextRepair.style.display =
-            item.type === "application" && item.missing
+            !isCategoryItem &&
+            item.type === "application" &&
+            item.missing
                 ? "flex"
                 : "none";
     }
+
+    if (contextCopy) {
+        contextCopy.textContent =
+            item.type === "application" ? "Copy Path" : "Copy URL";
+        contextCopy.style.display = "flex";
+    }
+
+    if (contextDelete) {
+        contextDelete.querySelector("span").textContent =
+            isCategoryItem ? "Remove from Category" : "Delete";
+    }
+
+    contextSeparators.forEach((separator, index) => {
+        separator.style.display = isCategoryItem
+            ? (index === 0 ? "block" : "none")
+            : "";
+    });
 
     contextMenu.style.display = "block";
 
@@ -1844,7 +2173,6 @@ function openContextMenu(item, x, y) {
     contextMenu.style.left = left + "px";
     contextMenu.style.top = top + "px";
 }
-
 function closeContextMenu() {
     contextMenu.style.display = "none";
     contextMenuItem = null;
@@ -1881,7 +2209,11 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
         if (action === "open") {
             await openItem(item);
         } else if (action === "edit") {
-            editItem(item);
+            if (item.categoryId !== undefined && item.categoryId !== null) {
+                openCategoryItemNameDialog(item);
+            } else {
+                editItem(item);
+            }
         } else if (action === "repair") {
             await repairApplication(item);
         } else if (action === "favorite") {
@@ -1898,7 +2230,11 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
                 }
             }
         } else if (action === "delete") {
-            openDeleteDialog(item);
+            if (item.categoryId !== undefined && item.categoryId !== null) {
+                await removeItemFromCategory(item);
+            } else {
+                openDeleteDialog(item);
+            }
         }
     });
 });
@@ -2147,6 +2483,7 @@ async function initializeLauncher() {
     initSettingsEvents();
 
     loadLauncherCategories();
+    refreshAllAddCategorySelects();
 
     launcherItems = await loadLauncherItems();
 
