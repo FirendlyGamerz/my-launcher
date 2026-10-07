@@ -1072,7 +1072,7 @@ ipcMain.handle(
 
 ipcMain.handle(
     'open-application',
-    (event, applicationPath) => {
+    async (event, applicationPath) => {
 
         try {
 
