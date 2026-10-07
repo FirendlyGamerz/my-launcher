@@ -566,8 +566,9 @@ function createCategoryCard(category) {
     categoryMenuButton.className = "category-menu-button";
     categoryMenuButton.textContent = "⋮";
     categoryMenuButton.title = "Category options";
-    categoryMenuButton.addEventListener("click", () => {
-        openCategoryMenu(category);
+    categoryMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openCategoryMenu(category, categoryMenuButton);
     });
 
     titleWrap.appendChild(title);
@@ -654,7 +655,7 @@ function closeCategoryMenu() {
     }
 }
 
-function openCategoryMenu(category) {
+function openCategoryMenu(category, categoryButton) {
     closeCategoryMenu();
 
     const menu = document.createElement("div");
@@ -682,11 +683,6 @@ function openCategoryMenu(category) {
     menu.appendChild(editButton);
     menu.appendChild(deleteButton);
     document.body.appendChild(menu);
-
-    const categoryButtons = document.querySelectorAll(".category-menu-button");
-    const categoryButton = [...categoryButtons].find(
-        (button) => button.parentElement?.querySelector("h3")?.textContent === category.name
-    );
 
     if (categoryButton) {
         const rect = categoryButton.getBoundingClientRect();
