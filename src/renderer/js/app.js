@@ -727,6 +727,7 @@ function deleteCategory(category) {
             showMessage("Delete Failed", "The category could not be deleted.");
             return;
         }
+        refreshAllAddCategoryControls();
         renderCategories();
         return;
     }
@@ -1694,6 +1695,19 @@ applicationForm.addEventListener("submit", async (event) => {
     }
 
     const duplicateApplication = findDuplicateApplication(applicationPath, editingItemId);
+
+    if (
+        duplicateApplication &&
+        pendingCategoryId !== null &&
+        editingItemId === null
+    ) {
+        showMessage(
+            "Already Exists",
+            `"${duplicateApplication.name}" is already exists. Please import from launcher.`
+        );
+        return;
+    }
+
     if (duplicateApplication) {
         showMessage("Already Added", `"${duplicateApplication.name}" is already saved with this path.`);
         return;
@@ -2546,6 +2560,7 @@ deleteConfirm.addEventListener("click", async () => {
         }
 
         closeDeleteDialog();
+        refreshAllAddCategoryControls();
         renderItems();
         return;
     }
@@ -2703,7 +2718,7 @@ async function initializeLauncher() {
     initSettingsEvents();
 
     loadLauncherCategories();
-    refreshAllAddCategorySelects();
+    refreshAllAddCategoryControls();
 
     launcherItems = await loadLauncherItems();
 
