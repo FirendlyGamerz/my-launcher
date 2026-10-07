@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld(
             settings
         ),
 
+        checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+
 
         openWebsite: (url) => ipcRenderer.invoke(
             'open-website',
