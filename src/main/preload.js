@@ -15,6 +15,11 @@ contextBridge.exposeInMainWorld(
             items
         ),
 
+        applyBehaviorSettings: (settings) => ipcRenderer.invoke(
+            'apply-behavior-settings',
+            settings
+        ),
+
 
         openWebsite: (url) => ipcRenderer.invoke(
             'open-website',
