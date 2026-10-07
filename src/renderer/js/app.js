@@ -645,16 +645,62 @@ function renderCategories() {
     });
 }
 
+let activeCategoryMenu = null;
+
+function closeCategoryMenu() {
+    if (activeCategoryMenu) {
+        activeCategoryMenu.remove();
+        activeCategoryMenu = null;
+    }
+}
+
 function openCategoryMenu(category) {
-    const action = window.confirm(
-        'Choose "OK" to edit this category or "Cancel" to delete it?'
+    closeCategoryMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "category-menu";
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.textContent = "Edit Category";
+    editButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeCategoryMenu();
+        editCategory(category);
+    });
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "category-menu-delete";
+    deleteButton.textContent = "Delete Category";
+    deleteButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeCategoryMenu();
+        deleteCategory(category);
+    });
+
+    menu.appendChild(editButton);
+    menu.appendChild(deleteButton);
+    document.body.appendChild(menu);
+
+    const categoryButtons = document.querySelectorAll(".category-menu-button");
+    const categoryButton = [...categoryButtons].find(
+        (button) => button.parentElement?.querySelector("h3")?.textContent === category.name
     );
 
-    if (action) {
-        editCategory(category);
-    } else {
-        deleteCategory(category);
+    if (categoryButton) {
+        const rect = categoryButton.getBoundingClientRect();
+        menu.style.top = Math.min(
+            rect.bottom + 6,
+            window.innerHeight - menu.offsetHeight - 8
+        ) + "px";
+        menu.style.left = Math.min(
+            rect.right - menu.offsetWidth,
+            window.innerWidth - menu.offsetWidth - 8
+        ) + "px";
     }
+
+    activeCategoryMenu = menu;
 }
 
 function editCategory(category) {
@@ -1806,6 +1852,14 @@ function closeContextMenu() {
 document.addEventListener("click", (event) => {
     if (!contextMenu.contains(event.target)) {
         closeContextMenu();
+    }
+
+    if (
+        activeCategoryMenu &&
+        !activeCategoryMenu.contains(event.target) &&
+        !event.target.closest(".category-menu-button")
+    ) {
+        closeCategoryMenu();
     }
 });
 
