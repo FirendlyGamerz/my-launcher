@@ -843,7 +843,30 @@
                         </div>
 
 
-                        <div class="form-group favorite-field">
+                        
+                        <div class="form-group add-category-group" id="website-category-group">
+
+                            <div class="add-category-toggle-row">
+                                <div class="add-category-toggle-label">
+                                    <strong>Category</strong>
+                                    <span>Add this item to a category automatically</span>
+                                </div>
+
+                                <label class="toggle-switch category-toggle">
+                                    <input type="checkbox" id="website-category-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="add-category-select-row" id="website-category-select-row">
+                                <label for="website-category-select">Category</label>
+                                <select id="website-category-select">
+                                    <option value="">Select a category</option>
+                                </select>
+                            </div>
+
+                        </div>
+<div class="form-group favorite-field">
 
                             <label>
 
@@ -921,7 +944,30 @@
                         </div>
 
 
-                        <div class="form-group favorite-field">
+                        
+                        <div class="form-group add-category-group" id="webapp-category-group">
+
+                            <div class="add-category-toggle-row">
+                                <div class="add-category-toggle-label">
+                                    <strong>Category</strong>
+                                    <span>Add this item to a category automatically</span>
+                                </div>
+
+                                <label class="toggle-switch category-toggle">
+                                    <input type="checkbox" id="webapp-category-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="add-category-select-row" id="webapp-category-select-row">
+                                <label for="webapp-category-select">Category</label>
+                                <select id="webapp-category-select">
+                                    <option value="">Select a category</option>
+                                </select>
+                            </div>
+
+                        </div>
+<div class="form-group favorite-field">
 
                             <label>
 
@@ -1009,7 +1055,30 @@
                         </div>
 
 
-                        <div class="form-group favorite-field">
+                        
+                        <div class="form-group add-category-group" id="application-category-group">
+
+                            <div class="add-category-toggle-row">
+                                <div class="add-category-toggle-label">
+                                    <strong>Category</strong>
+                                    <span>Add this item to a category automatically</span>
+                                </div>
+
+                                <label class="toggle-switch category-toggle">
+                                    <input type="checkbox" id="application-category-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="add-category-select-row" id="application-category-select-row">
+                                <label for="application-category-select">Category</label>
+                                <select id="application-category-select">
+                                    <option value="">Select a category</option>
+                                </select>
+                            </div>
+
+                        </div>
+<div class="form-group favorite-field">
 
                             <label>
 
@@ -1046,6 +1115,67 @@
                     </form>
 
                 </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Category Item Name Dialog -->
+
+        <div
+            class="category-item-name-dialog"
+            id="category-item-name-dialog"
+        >
+
+            <div class="category-item-name-box">
+
+                <div class="dialog-header">
+
+                    <h3>Edit Name</h3>
+
+                    <button
+                        type="button"
+                        class="close-button"
+                        id="close-category-item-name-dialog"
+                    >
+                        &times;
+                    </button>
+
+                </div>
+
+                <form id="category-item-name-form">
+
+                    <div class="dialog-content">
+
+                        <div class="form-group">
+                            <label for="category-item-name">Name</label>
+                            <input
+                                type="text"
+                                id="category-item-name"
+                                maxlength="100"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="form-cancel"
+                                id="cancel-category-item-name"
+                            >
+                                Cancel
+                            </button>
+
+                            <button type="submit">
+                                Save Name
+                            </button>
+                        </div>
+
+                    </div>
+
+                </form>
 
             </div>
 
