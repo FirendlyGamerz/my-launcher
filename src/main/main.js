@@ -417,7 +417,7 @@ ipcMain.handle(
 
 
             if (
-                !/^https?:\/\//i.test(
+                !/^https?:\\/\\//i.test(
                     normalizedUrl
                 )
             ) {
@@ -498,7 +498,7 @@ ipcMain.handle(
 
             if (
                 typeof url !== 'string' ||
-                !/^https?:\/\//i.test(url)
+                !/^https?:\\/\\//i.test(url)
             ) {
 
                 return false;
@@ -560,7 +560,7 @@ ipcMain.handle(
 
             if (
                 typeof url !== 'string' ||
-                !/^https:\/\//i.test(url)
+                !/^https:\\/\\//i.test(url)
             ) {
 
                 return {
@@ -661,7 +661,7 @@ ipcMain.handle(
                 ({ url: requestedUrl }) => {
 
                     if (
-                        /^https:\/\//i.test(
+                        /^https:\\/\\//i.test(
                             requestedUrl
                         )
                     ) {
@@ -685,10 +685,20 @@ ipcMain.handle(
                 if (
                     !webAppWindow.isDestroyed()
                 ) {
-                    console.error(
-                        'Web app page failed to load:',
-                        error
-                    );
+                    const currentUrl =
+                        webAppWindow.webContents.getURL();
+
+                    if (
+                        !currentUrl ||
+                        !currentUrl.startsWith(
+                            parsedUrl.origin
+                        )
+                    ) {
+                        console.error(
+                            'Web app page failed to load:',
+                            error
+                        );
+                    }
                 }
             });
 
