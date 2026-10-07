@@ -338,8 +338,8 @@ function renderLauncherPicker() {
         // An item already added to this category must be removed from the list.
         const alreadyInCategory = launcherItems.some(
             (entry) =>
-                entry.categoryId === pendingCategoryId &&
-                entry.sourceItemId === item.id
+                Number(entry.categoryId) === Number(pendingCategoryId) &&
+                Number(entry.sourceItemId) === Number(item.id)
         );
 
         if (alreadyInCategory) {
@@ -408,8 +408,8 @@ function renderLauncherPicker() {
 
             const alreadyInCategory = launcherItems.some(
                 (entry) =>
-                    entry.categoryId === pendingCategoryId &&
-                    entry.sourceItemId === item.id
+                    Number(entry.categoryId) === Number(pendingCategoryId) &&
+                    Number(entry.sourceItemId) === Number(item.id)
             );
 
             if (alreadyInCategory) {
@@ -551,7 +551,7 @@ function createCategoryCard(category) {
     card.className = "category-card";
 
     const categoryItems = launcherItems.filter(
-        (item) => item.categoryId === category.id
+        (item) => Number(item.categoryId) === Number(category.id)
     );
 
     const sectionHeader = document.createElement("div");
@@ -913,6 +913,9 @@ const contextMenu = document.querySelector("#context-menu");
 // that clipping container so it can appear at any position in the window.
 if (contextMenu && contextMenu.parentElement !== document.body) {
     document.body.appendChild(contextMenu);
+}
+if (contextMenu) {
+    contextMenu.style.zIndex = "10000";
 }
 
 const contextFavorite = document.querySelector("#context-favorite");
@@ -1424,7 +1427,7 @@ function addItemToCategory(originalItem, categoryId) {
 
     const exists = launcherItems.some(
         (entry) =>
-            entry.sourceItemId === originalItem.id &&
+            Number(entry.sourceItemId) === Number(originalItem.id) &&
             Number(entry.categoryId) === Number(categoryId)
     );
 
@@ -1519,16 +1522,13 @@ websiteForm.addEventListener("submit", async (event) => {
             favicon: favicon || null
         };
 
-        if (pendingCategoryId !== null) {
-            // Preserve the existing "+ New" flow from inside a category.
-            originalItem.categoryId = pendingCategoryId;
-        }
-
         launcherItems.push(originalItem);
 
-        // A normal Home "+ Add" keeps the original on Home and creates
-        // a separate category copy when the Category toggle is enabled.
-        if (pendingCategoryId === null) {
+        // "+ New" from inside a category creates the original launcher item
+        // plus a separate category copy. The original stays an original item.
+        if (pendingCategoryId !== null) {
+            addItemToCategory(originalItem, pendingCategoryId);
+        } else {
             getAddCategoryIds("website").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
@@ -1619,16 +1619,13 @@ webappForm.addEventListener("submit", async (event) => {
             favicon: favicon || null
         };
 
-        if (pendingCategoryId !== null) {
-            // Preserve the existing "+ New" flow from inside a category.
-            originalItem.categoryId = pendingCategoryId;
-        }
-
         launcherItems.push(originalItem);
 
-        // A normal Home "+ Add" keeps the original on Home and creates
-        // a separate category copy when the Category toggle is enabled.
-        if (pendingCategoryId === null) {
+        // "+ New" from inside a category creates the original launcher item
+        // plus a separate category copy. The original stays an original item.
+        if (pendingCategoryId !== null) {
+            addItemToCategory(originalItem, pendingCategoryId);
+        } else {
             getAddCategoryIds("webapp").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
@@ -1759,16 +1756,13 @@ applicationForm.addEventListener("submit", async (event) => {
             favicon: applicationIcon || null
         };
 
-        if (pendingCategoryId !== null) {
-            // Preserve the existing "+ New" flow from inside a category.
-            originalItem.categoryId = pendingCategoryId;
-        }
-
         launcherItems.push(originalItem);
 
-        // A normal Home "+ Add" keeps the original on Home and creates
-        // a separate category copy when the Category toggle is enabled.
-        if (pendingCategoryId === null) {
+        // "+ New" from inside a category creates the original launcher item
+        // plus a separate category copy. The original stays an original item.
+        if (pendingCategoryId !== null) {
+            addItemToCategory(originalItem, pendingCategoryId);
+        } else {
             getAddCategoryIds("application").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
         }
     }
@@ -2231,7 +2225,7 @@ async function removeItemFromCategory(item) {
 
     const oldItems = [...launcherItems];
     launcherItems = launcherItems.filter(
-        (entry) => entry.id !== item.id
+        (entry) => Number(entry.id) !== Number(item.id)
     );
 
     const saved = await saveLauncherItems(launcherItems);
@@ -2251,7 +2245,7 @@ async function removeItemFromCategory(item) {
 function getCategoryCopiesForItem(itemId) {
     return launcherItems.filter(
         (entry) =>
-            entry.sourceItemId === itemId &&
+            Number(entry.sourceItemId) === Number(itemId) &&
             entry.categoryId !== undefined &&
             entry.categoryId !== null
     );
@@ -2286,15 +2280,15 @@ async function syncItemCategories(item, selectedIds) {
     const selected = [...new Set(selectedIds.map(Number))];
 
     launcherItems = launcherItems.filter((entry) => {
-        if (entry.sourceItemId !== item.id) return true;
+        if (Number(entry.sourceItemId) !== Number(item.id)) return true;
         return selected.includes(Number(entry.categoryId));
     });
 
     selected.forEach((categoryId) => {
         const exists = launcherItems.some(
             (entry) =>
-                entry.sourceItemId === item.id &&
-                Number(entry.categoryId) === categoryId
+                Number(entry.sourceItemId) === Number(item.id) &&
+                Number(entry.categoryId) === Number(categoryId)
         );
 
         if (!exists) {
@@ -2454,48 +2448,59 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
-    button.addEventListener("click", async () => {
-        if (!contextMenuItem) return;
-        const item = contextMenuItem;
-        const action = button.dataset.action;
-        closeContextMenu();
+contextMenu.addEventListener("click", async (event) => {
+    const button = event.target.closest(".context-menu-item");
+    if (!button || !contextMenu.contains(button)) return;
 
-        if (action === "open") {
-            await openItem(item);
-        } else if (action === "edit") {
-            if (item.categoryId !== undefined && item.categoryId !== null) {
-                openCategoryItemNameDialog(item);
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!contextMenuItem) return;
+
+    const item = contextMenuItem;
+    const action = button.dataset.action;
+    closeContextMenu();
+
+    if (action === "open") {
+        await openItem(item);
+    } else if (action === "edit") {
+        if (item.categoryId !== undefined && item.categoryId !== null) {
+            openCategoryItemNameDialog(item);
+        } else {
+            editItem(item);
+        }
+    } else if (action === "add-categories") {
+        if (item.categoryId === undefined || item.categoryId === null) {
+            openItemCategoriesDialog(item);
+        }
+    } else if (action === "repair") {
+        await repairApplication(item);
+    } else if (action === "favorite") {
+        const oldFavorite = Boolean(item.favorite);
+        item.favorite = !oldFavorite;
+        const saved = await saveLauncherItems(launcherItems);
+        if (!saved) {
+            item.favorite = oldFavorite;
+            showMessage("Save Failed", "The favorite status could not be saved.");
+            return;
+        }
+        renderItems();
+    } else if (action === "copy") {
+        if (item.target) {
+            const result = await window.launcherAPI.copyToClipboard(item.target);
+            if (result && result.success) {
+                showToast(item.type === "application" ? "Path copied to clipboard" : "URL copied to clipboard");
             } else {
-                editItem(item);
-            }
-        } else if (action === "add-categories") {
-            if (item.categoryId === undefined || item.categoryId === null) {
-                openItemCategoriesDialog(item);
-            }
-        } else if (action === "repair") {
-            await repairApplication(item);
-        } else if (action === "favorite") {
-            item.favorite = !item.favorite;
-            await saveLauncherItems(launcherItems);
-            renderItems();
-        } else if (action === "copy") {
-            if (item.target) {
-                const result = await window.launcherAPI.copyToClipboard(item.target);
-                if (result && result.success) {
-                    showToast(item.type === "application" ? "Path copied to clipboard" : "URL copied to clipboard");
-                } else {
-                    showMessage("Copy Failed", "The path or URL could not be copied.");
-                }
-            }
-        } else if (action === "delete") {
-            if (item.categoryId !== undefined && item.categoryId !== null) {
-                await removeItemFromCategory(item);
-            } else {
-                openDeleteDialog(item);
+                showMessage("Copy Failed", "The path or URL could not be copied.");
             }
         }
-    });
+    } else if (action === "delete") {
+        if (item.categoryId !== undefined && item.categoryId !== null) {
+            await removeItemFromCategory(item);
+        } else {
+            openDeleteDialog(item);
+        }
+    }
 });
 
 
@@ -2566,10 +2571,10 @@ deleteConfirm.addEventListener("click", async () => {
         const oldItems = [...launcherItems];
 
         launcherCategories = launcherCategories.filter(
-            (entry) => entry.id !== category.id
+            (entry) => Number(entry.id) !== Number(category.id)
         );
         launcherItems = launcherItems.filter(
-            (entry) => entry.categoryId !== category.id
+            (entry) => Number(entry.categoryId) !== Number(category.id)
         );
 
         const categoriesSaved = saveLauncherCategories();
