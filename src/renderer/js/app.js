@@ -1526,7 +1526,11 @@ function renderItems() {
     }
 
     sortedItems.forEach((item) => {
-        homeGrid.appendChild(createCard(item));
+        // Items that belong to a category are category copies.
+        // They should not appear again on the main Home page.
+        if (item.categoryId === undefined || item.categoryId === null) {
+            homeGrid.appendChild(createCard(item));
+        }
 
         if (item.type === "website") {
             categoryGrids.websites.appendChild(createCard(item));
