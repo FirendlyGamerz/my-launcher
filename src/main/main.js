@@ -683,22 +683,19 @@ ipcMain.handle(
                 parsedUrl.href
             ).catch((error) => {
                 if (
+                    error &&
+                    error.code === 'ERR_FAILED'
+                ) {
+                    return;
+                }
+
+                if (
                     !webAppWindow.isDestroyed()
                 ) {
-                    const currentUrl =
-                        webAppWindow.webContents.getURL();
-
-                    if (
-                        !currentUrl ||
-                        !currentUrl.startsWith(
-                            parsedUrl.origin
-                        )
-                    ) {
-                        console.error(
-                            'Web app page failed to load:',
-                            error
-                        );
-                    }
+                    console.error(
+                        'Web app page failed to load:',
+                        error
+                    );
                 }
             });
 
