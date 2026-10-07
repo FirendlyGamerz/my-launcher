@@ -2,6 +2,8 @@ let launcherItems = [];
 
 let launcherCategories = [];
 let pendingCategoryId = null;
+let editingCategoryId = null;
+let deleteTargetCategory = null;
 
 const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
 
@@ -321,6 +323,23 @@ function renderLauncherPicker() {
     launcherPickerList.innerHTML = "";
 
     const filteredItems = launcherItems.filter((item) => {
+        // Only original launcher items can be selected.
+        // Category copies must not appear in the picker.
+        if (item.categoryId !== undefined && item.categoryId !== null) {
+            return false;
+        }
+
+        // An item already added to this category must be removed from the list.
+        const alreadyInCategory = launcherItems.some(
+            (entry) =>
+                entry.categoryId === pendingCategoryId &&
+                entry.sourceItemId === item.id
+        );
+
+        if (alreadyInCategory) {
+            return false;
+        }
+
         const name = String(item.name || "").toLowerCase();
         const type = getLauncherTypeLabel(item.type).toLowerCase();
         const target = String(item.target || "").toLowerCase();
@@ -505,7 +524,10 @@ function saveLauncherCategories() {
 }
 
 function openCategoryDialog() {
+    editingCategoryId = null;
     categoryForm.reset();
+    categoryDialog.querySelector(".dialog-header h3").textContent = "Add Category";
+    categoryForm.querySelector('button[type="submit"]').textContent = "Add Category";
     categoryDialog.style.display = "flex";
     categoryNameInput.focus();
 }
@@ -513,6 +535,9 @@ function openCategoryDialog() {
 function closeCategoryDialogDialog() {
     categoryDialog.style.display = "none";
     categoryForm.reset();
+    editingCategoryId = null;
+    categoryDialog.querySelector(".dialog-header h3").textContent = "Add Category";
+    categoryForm.querySelector('button[type="submit"]').textContent = "Add Category";
 }
 
 function createCategoryCard(category) {
@@ -536,8 +561,18 @@ function createCategoryCard(category) {
     count.className = "category-count";
     count.textContent = String(categoryItems.length);
 
+    const categoryMenuButton = document.createElement("button");
+    categoryMenuButton.type = "button";
+    categoryMenuButton.className = "category-menu-button";
+    categoryMenuButton.textContent = "⋮";
+    categoryMenuButton.title = "Category options";
+    categoryMenuButton.addEventListener("click", () => {
+        openCategoryMenu(category);
+    });
+
     titleWrap.appendChild(title);
     titleWrap.appendChild(count);
+    titleWrap.appendChild(categoryMenuButton);
 
     const addLauncherButton = document.createElement("button");
     addLauncherButton.type = "button";
@@ -610,6 +645,52 @@ function renderCategories() {
     });
 }
 
+function openCategoryMenu(category) {
+    const action = window.confirm(
+        'Choose "OK" to edit this category or "Cancel" to delete it?'
+    );
+
+    if (action) {
+        editCategory(category);
+    } else {
+        deleteCategory(category);
+    }
+}
+
+function editCategory(category) {
+    editingCategoryId = category.id;
+    categoryNameInput.value = category.name;
+    categoryDialog.querySelector(".dialog-header h3").textContent = "Edit Category";
+    categoryForm.querySelector('button[type="submit"]').textContent = "Save Changes";
+    categoryDialog.style.display = "flex";
+    categoryNameInput.focus();
+}
+
+function deleteCategory(category) {
+    const categoryItems = launcherItems.filter(
+        (item) => item.categoryId === category.id
+    );
+
+    if (categoryItems.length === 0) {
+        launcherCategories = launcherCategories.filter(
+            (entry) => entry.id !== category.id
+        );
+        if (!saveLauncherCategories()) {
+            showMessage("Delete Failed", "The category could not be deleted.");
+            return;
+        }
+        renderCategories();
+        return;
+    }
+
+    deleteTargetCategory = category;
+    deleteTargetItem = null;
+    deleteTitle.textContent = "Delete Category?";
+    deleteMessage.textContent =
+        'Are you sure you want to delete "' + category.name + '"?';
+    deleteDialog.style.display = "flex";
+}
+
 function createCategory() {
     const name = categoryNameInput.value.trim();
 
@@ -620,6 +701,7 @@ function createCategory() {
 
     const duplicate = launcherCategories.some(
         (category) =>
+            category.id !== editingCategoryId &&
             String(category.name || "").trim().toLowerCase() === name.toLowerCase()
     );
 
@@ -628,15 +710,35 @@ function createCategory() {
         return;
     }
 
-    launcherCategories.push({
-        id: Date.now(),
-        name
-    });
+    if (editingCategoryId !== null) {
+        const category = launcherCategories.find(
+            (entry) => entry.id === editingCategoryId
+        );
 
-    if (!saveLauncherCategories()) {
-        launcherCategories.pop();
-        showMessage("Save Failed", "The category could not be saved.");
-        return;
+        if (!category) {
+            showMessage("Update Failed", "The category could not be found.");
+            return;
+        }
+
+        const oldName = category.name;
+        category.name = name;
+
+        if (!saveLauncherCategories()) {
+            category.name = oldName;
+            showMessage("Save Failed", "The category could not be updated.");
+            return;
+        }
+    } else {
+        launcherCategories.push({
+            id: Date.now(),
+            name
+        });
+
+        if (!saveLauncherCategories()) {
+            launcherCategories.pop();
+            showMessage("Save Failed", "The category could not be saved.");
+            return;
+        }
     }
 
     closeCategoryDialogDialog();
@@ -708,6 +810,7 @@ const messageText = document.querySelector("#message-text");
 const messageClose = document.querySelector("#message-close");
 
 const deleteDialog = document.querySelector("#delete-dialog");
+const deleteTitle = document.querySelector("#delete-title");
 const deleteMessage = document.querySelector("#delete-message");
 const deleteCancel = document.querySelector("#delete-cancel");
 const deleteConfirm = document.querySelector("#delete-confirm");
@@ -1798,11 +1901,44 @@ function openDeleteDialog(item) {
 function closeDeleteDialog() {
     deleteDialog.style.display = "none";
     deleteTargetItem = null;
+    deleteTargetCategory = null;
+    deleteTitle.textContent = "Delete Item?";
 }
 
 deleteCancel.addEventListener("click", closeDeleteDialog);
 
 deleteConfirm.addEventListener("click", async () => {
+    if (deleteTargetCategory) {
+        const category = deleteTargetCategory;
+        const oldCategories = [...launcherCategories];
+        const oldItems = [...launcherItems];
+
+        launcherCategories = launcherCategories.filter(
+            (entry) => entry.id !== category.id
+        );
+        launcherItems = launcherItems.filter(
+            (entry) => entry.categoryId !== category.id
+        );
+
+        const categoriesSaved = saveLauncherCategories();
+        const itemsSaved = categoriesSaved
+            ? await saveLauncherItems(launcherItems)
+            : false;
+
+        if (!categoriesSaved || !itemsSaved) {
+            launcherCategories = oldCategories;
+            launcherItems = oldItems;
+            saveLauncherCategories();
+            await saveLauncherItems(launcherItems);
+            showMessage("Delete Failed", "The category could not be deleted.");
+            return;
+        }
+
+        closeDeleteDialog();
+        renderItems();
+        return;
+    }
+
     if (!deleteTargetItem) return;
     launcherItems = launcherItems.filter((entry) => entry.id !== deleteTargetItem.id);
     const saved = await saveLauncherItems(launcherItems);
