@@ -144,6 +144,7 @@ function initSettingsEvents() {
     const btnRestore = document.querySelector("#btn-restore-data");
     const importInput = document.querySelector("#import-file-input");
     const btnReset = document.querySelector("#btn-reset-data");
+    const btnResetSettings = document.querySelector("#btn-reset-settings");
 
     if (btnBackup) {
         btnBackup.addEventListener("click", exportBackupData);
@@ -156,6 +157,10 @@ function initSettingsEvents() {
 
     if (btnReset) {
         btnReset.addEventListener("click", resetAllData);
+    }
+
+    if (btnResetSettings) {
+        btnResetSettings.addEventListener("click", resetSettings);
     }
 
     const btnCheckUpdate = document.querySelector("#btn-check-update");
@@ -218,18 +223,31 @@ function handleImportBackup(e) {
     reader.readAsText(file);
 }
 
+function getDefaultSettings() {
+    return {
+        theme: "dark",
+        density: "comfortable",
+        accentColor: "#3b82f6",
+        autoStart: false,
+        minimizeToTray: true,
+        startMinimized: false,
+        hotkey: "Alt+Space"
+    };
+}
+
+async function resetSettings() {
+    if (confirm("Kya aap sirf settings ko default state par reset karna chahte hain?")) {
+        appSettings = getDefaultSettings();
+        localStorage.removeItem(SETTINGS_STORAGE_KEY);
+        applySettings();
+        showMessage("Settings Reset", "Settings default state par reset ho gayi hain.");
+    }
+}
+
 async function resetAllData() {
     if (confirm("Kya aap saara launcher data aur settings reset karna chahte hain? Yeh action undo nahi ho sakta.")) {
         launcherItems = [];
-        appSettings = {
-            theme: "dark",
-            density: "comfortable",
-            accentColor: "#3b82f6",
-            autoStart: false,
-            minimizeToTray: true,
-            startMinimized: false,
-            hotkey: "Alt+Space"
-        };
+        appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
         await saveLauncherItems(launcherItems);
         applySettings();
@@ -300,6 +318,7 @@ const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
 const contextRepair = document.querySelector("#context-repair");
 const searchInput = document.querySelector("#search-input");
+const sortSelect = document.querySelector("#sort-select");
 
 
 /* ==============================
@@ -349,6 +368,26 @@ function showMessage(title, message) {
     messageTitle.textContent = title;
     messageText.textContent = message;
     messageDialog.style.display = "flex";
+}
+
+let toastTimer = null;
+
+function showToast(message) {
+    let toast = document.querySelector("#launcher-toast");
+
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "launcher-toast";
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.add("visible");
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("visible");
+    }, 2200);
 }
 
 function closeMessage() {
@@ -1004,7 +1043,16 @@ function renderItems() {
     categoryGrids.webapps.innerHTML = "";
     categoryGrids.applications.innerHTML = "";
 
-    launcherItems.forEach((item) => {
+    const sortedItems = [...launcherItems];
+    const sortMode = sortSelect ? sortSelect.value : "default";
+
+    if (sortMode === "name-az") {
+        sortedItems.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" }));
+    } else if (sortMode === "name-za") {
+        sortedItems.sort((a, b) => String(b.name || "").localeCompare(String(a.name || ""), undefined, { sensitivity: "base" }));
+    }
+
+    sortedItems.forEach((item) => {
         homeGrid.appendChild(createCard(item));
 
         if (item.type === "website") {
@@ -1206,8 +1254,12 @@ contextMenu.querySelectorAll(".context-menu-item").forEach((button) => {
             renderItems();
         } else if (action === "copy") {
             if (item.target) {
-                await window.launcherAPI.copyToClipboard(item.target);
-                showMessage("Copied", item.type === "application" ? "Path copied." : "URL copied.");
+                const result = await window.launcherAPI.copyToClipboard(item.target);
+                if (result && result.success) {
+                    showToast(item.type === "application" ? "Path copied to clipboard" : "URL copied to clipboard");
+                } else {
+                    showMessage("Copy Failed", "The path or URL could not be copied.");
+                }
             }
         } else if (action === "delete") {
             openDeleteDialog(item);
@@ -1337,6 +1389,13 @@ function applySearch() {
 }
 
 searchInput.addEventListener("input", applySearch);
+
+if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+        renderItems();
+        applySearch();
+    });
+}
 
 
 /* ==============================
