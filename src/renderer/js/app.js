@@ -291,12 +291,16 @@ function openCategorySourceDialog() {
     categorySourceDialog.style.display = "flex";
 }
 
-function closeCategorySourceDialogDialog() {
+function closeCategorySourceDialogDialog(keepPendingCategory = false) {
     categorySourceDialog.style.display = "none";
+
+    if (!keepPendingCategory) {
+        pendingCategoryId = null;
+    }
 }
 
 function openCategoryNewFlow() {
-    closeCategorySourceDialogDialog();
+    closeCategorySourceDialogDialog(true);
     openAddDialog();
     document.querySelector(".dialog-header h3").textContent =
         "Add Item to Category";
@@ -418,7 +422,7 @@ function renderLauncherPicker() {
 }
 
 function openLauncherPickerDialog() {
-    closeCategorySourceDialogDialog();
+    closeCategorySourceDialogDialog(true);
     launcherPickerSearch.value = "";
     renderLauncherPicker();
     launcherPickerDialog.style.display = "flex";
@@ -428,6 +432,7 @@ function openLauncherPickerDialog() {
 function closeLauncherPickerDialog() {
     launcherPickerDialog.style.display = "none";
     launcherPickerSearch.value = "";
+    pendingCategoryId = null;
 }
 
 if (categoryNewButton) {
