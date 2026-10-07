@@ -96,6 +96,246 @@ function getSelectionCount() {
     return selectionState.selectedItemIds.size;
 }
 
+/* ==============================
+   Selection UI Helpers
+================================= */
+
+function getScopeItemIds(scope, categoryId = null) {
+    let items = [];
+
+    if (scope === "home") {
+        items = launcherItems.filter(
+            (item) =>
+                item.categoryId === undefined ||
+                item.categoryId === null
+        );
+    } else if (
+        scope === "favorites" ||
+        scope === "favorites-websites" ||
+        scope === "favorites-webapps" ||
+        scope === "favorites-applications" ||
+        scope === "websites" ||
+        scope === "webapps" ||
+        scope === "applications"
+    ) {
+        items = launcherItems.filter((item) => {
+            const original =
+                item.categoryId === undefined ||
+                item.categoryId === null;
+
+            if (!original) return false;
+
+            if (scope === "favorites") return item.favorite === true;
+            if (scope === "favorites-websites") return item.favorite === true && item.type === "website";
+            if (scope === "favorites-webapps") return item.favorite === true && item.type === "webapp";
+            if (scope === "favorites-applications") return item.favorite === true && item.type === "application";
+            if (scope === "websites") return item.type === "website";
+            if (scope === "webapps") return item.type === "webapp";
+            if (scope === "applications") return item.type === "application";
+
+            return false;
+        });
+    } else if (scope === "category-items") {
+        items = launcherItems.filter(
+            (item) => Number(item.categoryId) === Number(categoryId)
+        );
+    }
+
+    return items.map((item) => Number(item.id));
+}
+
+function getCategoryIds() {
+    return launcherCategories.map((category) => Number(category.id));
+}
+
+function areAllScopeItemsSelected(scope, categoryId = null) {
+    const ids = getScopeItemIds(scope, categoryId);
+
+    if (ids.length === 0) {
+        return false;
+    }
+
+    return ids.every((id) => selectionState.selectedItemIds.has(id));
+}
+
+function toggleAllScopeItems(scope, categoryId = null) {
+    const ids = getScopeItemIds(scope, categoryId);
+
+    if (ids.length === 0) {
+        return;
+    }
+
+    const allSelected = ids.every((id) =>
+        selectionState.selectedItemIds.has(id)
+    );
+
+    if (allSelected) {
+        ids.forEach((id) => selectionState.selectedItemIds.delete(id));
+    } else {
+        ids.forEach((id) => selectionState.selectedItemIds.add(id));
+    }
+}
+
+function toggleAllCategories() {
+    const ids = getCategoryIds();
+
+    if (ids.length === 0) {
+        return;
+    }
+
+    const allSelected = ids.every((id) =>
+        selectionState.selectedCategoryIds.has(id)
+    );
+
+    if (allSelected) {
+        ids.forEach((id) => selectionState.selectedCategoryIds.delete(id));
+    } else {
+        ids.forEach((id) => selectionState.selectedCategoryIds.add(id));
+    }
+}
+
+function areAllCategoriesSelected() {
+    const ids = getCategoryIds();
+
+    if (ids.length === 0) {
+        return false;
+    }
+
+    return ids.every((id) =>
+        selectionState.selectedCategoryIds.has(id)
+    );
+}
+
+function syncSelectionUI() {
+    document.body.classList.toggle(
+        "selection-mode",
+        selectionState.active
+    );
+
+    if (selectionState.active) {
+        document.body.dataset.selectionScope = selectionState.scope || "";
+    } else {
+        delete document.body.dataset.selectionScope;
+    }
+
+    document
+        .querySelectorAll(".selection-master-checkbox")
+        .forEach((checkbox) => {
+            const scope = checkbox.dataset.selectionScope;
+
+            if (scope === "categories") {
+                checkbox.checked = areAllCategoriesSelected();
+                return;
+            }
+
+            const categoryId = checkbox.dataset.categoryId;
+
+            checkbox.checked = areAllScopeItemsSelected(
+                scope,
+                categoryId === undefined
+                    ? null
+                    : Number(categoryId)
+            );
+        });
+
+    document
+        .querySelectorAll(".card-selection-checkbox")
+        .forEach((checkbox) => {
+            const itemId = Number(checkbox.dataset.itemId);
+            const selected = isItemSelected(itemId);
+
+            checkbox.checked = selected;
+
+            const card = checkbox.closest(".app-card");
+            if (card) {
+                card.classList.toggle("selected", selected);
+            }
+        });
+
+    document
+        .querySelectorAll(".category-selection-checkbox")
+        .forEach((checkbox) => {
+            const categoryId = Number(checkbox.dataset.categoryId);
+            checkbox.checked = isCategorySelected(categoryId);
+        });
+
+    document
+        .querySelectorAll(".category-card")
+        .forEach((card) => {
+            const categoryId = Number(card.dataset.categoryId);
+            const activeCategory =
+                selectionState.scope === "category-items" &&
+                Number(selectionState.categoryId) === categoryId;
+
+            card.classList.toggle(
+                "selection-category-active",
+                activeCategory
+            );
+
+            const itemMaster =
+                card.querySelector(".category-item-master-checkbox");
+
+            if (itemMaster) {
+                itemMaster.style.display =
+                    activeCategory ? "inline-grid" : "none";
+            }
+        });
+}
+
+function startSelection(scope, categoryId = null, initialItemId = null) {
+    enterSelectionMode(scope, categoryId, initialItemId);
+
+    if (scope === "categories") {
+        renderCategories();
+    } else {
+        renderItems();
+    }
+
+    syncSelectionUI();
+}
+
+document.addEventListener("change", (event) => {
+    const checkbox = event.target.closest(".selection-master-checkbox");
+
+    if (!checkbox || !selectionState.active) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const scope = checkbox.dataset.selectionScope;
+
+    if (scope === "categories") {
+        toggleAllCategories();
+    } else {
+        const categoryId = checkbox.dataset.categoryId;
+
+        toggleAllScopeItems(
+            scope,
+            categoryId === undefined ? null : Number(categoryId)
+        );
+    }
+
+    syncSelectionUI();
+});
+
+document.addEventListener("click", (event) => {
+    const exitButton = event.target.closest(".selection-exit-button");
+
+    if (!exitButton) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    exitSelectionMode();
+    renderItems();
+    renderCategories();
+    syncSelectionUI();
+});
+
 let deleteTargetItem = null;
 
 let editingItemId = null;
@@ -797,6 +1037,7 @@ function closeCategoryDialogDialog() {
 function createCategoryCard(category) {
     const card = document.createElement("section");
     card.className = "category-card";
+    card.dataset.categoryId = category.id;
 
     const categoryItems = launcherItems.filter(
         (item) => Number(item.categoryId) === Number(category.id)
@@ -807,6 +1048,54 @@ function createCategoryCard(category) {
 
     const titleWrap = document.createElement("div");
     titleWrap.className = "category-card-title";
+
+    const categorySelectionCheckbox = document.createElement("input");
+    categorySelectionCheckbox.type = "checkbox";
+    categorySelectionCheckbox.className = "category-selection-checkbox";
+    categorySelectionCheckbox.dataset.categoryId = category.id;
+    categorySelectionCheckbox.checked = isCategorySelected(category.id);
+    categorySelectionCheckbox.setAttribute(
+        "aria-label",
+        "Select category " + String(category.name || "")
+    );
+    categorySelectionCheckbox.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        if (!selectionState.active || selectionState.scope !== "categories") {
+            return;
+        }
+
+        toggleCategorySelection(category.id);
+        syncSelectionUI();
+    });
+
+    const categoryItemMasterCheckbox = document.createElement("input");
+    categoryItemMasterCheckbox.type = "checkbox";
+    categoryItemMasterCheckbox.className = "category-item-master-checkbox";
+    categoryItemMasterCheckbox.dataset.selectionScope = "category-items";
+    categoryItemMasterCheckbox.dataset.categoryId = category.id;
+    categoryItemMasterCheckbox.checked =
+        selectionState.scope === "category-items" &&
+        Number(selectionState.categoryId) === Number(category.id) &&
+        areAllScopeItemsSelected("category-items", category.id);
+    categoryItemMasterCheckbox.setAttribute(
+        "aria-label",
+        "Select all items in " + String(category.name || "")
+    );
+    categoryItemMasterCheckbox.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        if (
+            !selectionState.active ||
+            selectionState.scope !== "category-items" ||
+            Number(selectionState.categoryId) !== Number(category.id)
+        ) {
+            return;
+        }
+
+        toggleAllScopeItems("category-items", category.id);
+        syncSelectionUI();
+    });
 
     const title = document.createElement("h3");
     title.textContent = category.name;
@@ -825,9 +1114,29 @@ function createCategoryCard(category) {
         openCategoryMenu(category, categoryMenuButton);
     });
 
+    const categoryExitButton = document.createElement("button");
+    categoryExitButton.type = "button";
+    categoryExitButton.className =
+        "selection-exit-button category-selection-exit";
+    categoryExitButton.setAttribute(
+        "aria-label",
+        "Exit selection mode"
+    );
+    categoryExitButton.textContent = "×";
+    categoryExitButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        exitSelectionMode();
+        renderItems();
+        renderCategories();
+        syncSelectionUI();
+    });
+
+    titleWrap.appendChild(categorySelectionCheckbox);
+    titleWrap.appendChild(categoryItemMasterCheckbox);
     titleWrap.appendChild(title);
     titleWrap.appendChild(count);
     titleWrap.appendChild(categoryMenuButton);
+    titleWrap.appendChild(categoryExitButton);
 
     const addLauncherButton = document.createElement("button");
     addLauncherButton.type = "button";
@@ -839,6 +1148,17 @@ function createCategoryCard(category) {
     });
 
     sectionHeader.appendChild(titleWrap);
+
+    card.addEventListener("click", (event) => {
+        if (event.target.closest(".app-card")) {
+            return;
+        }
+
+        if (selectionState.active && selectionState.scope === "categories") {
+            toggleCategorySelection(category.id);
+            syncSelectionUI();
+        }
+    });
 
     const grid = document.createElement("div");
     grid.className = "app-grid category-item-grid";
@@ -898,6 +1218,8 @@ function renderCategories() {
     launcherCategories.forEach((category) => {
         categoriesGrid.appendChild(createCategoryCard(category));
     });
+
+    syncSelectionUI();
 }
 
 let activeCategoryMenu = null;
@@ -2257,6 +2579,28 @@ function createCard(item) {
         card.classList.add("app-card-missing");
     }
 
+    const selectionCheckbox = document.createElement("input");
+    selectionCheckbox.type = "checkbox";
+    selectionCheckbox.className = "card-selection-checkbox";
+    selectionCheckbox.dataset.itemId = item.id;
+    selectionCheckbox.checked = isItemSelected(item.id);
+    selectionCheckbox.setAttribute(
+        "aria-label",
+        "Select " + String(item.name || "launcher")
+    );
+    selectionCheckbox.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        if (!selectionState.active || selectionState.scope === "categories") {
+            return;
+        }
+
+        toggleItemSelection(item.id);
+        syncSelectionUI();
+    });
+
+    card.appendChild(selectionCheckbox);
+
     const icon = document.createElement("div");
     icon.className = "card-icon";
 
@@ -2296,7 +2640,16 @@ function createCard(item) {
     type.textContent = cardTypeLabel;
     card.appendChild(type);
 
-    card.addEventListener("click", () => openItem(item));
+    card.addEventListener("click", (event) => {
+        if (selectionState.active && selectionState.scope !== "categories") {
+            event.preventDefault();
+            toggleItemSelection(item.id);
+            syncSelectionUI();
+            return;
+        }
+
+        openItem(item);
+    });
 
     return card;
 }
@@ -2472,6 +2825,7 @@ function renderItems() {
 
     homeEmptyState.style.display = originalItemsCount === 0 ? "flex" : "none";
     renderCategories();
+    syncSelectionUI();
 }
 
 
