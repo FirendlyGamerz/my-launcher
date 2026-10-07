@@ -79,7 +79,7 @@ function registerGlobalHotkey(accelerator) {
         registeredHotkey = null;
     }
 
-    if (!accelerator || accelerator === 'disabled') return;
+    if (!accelerator || accelerator === 'disabled') return true;
 
     try {
         if (globalShortcut.register(accelerator, () => {
@@ -95,6 +95,8 @@ function registerGlobalHotkey(accelerator) {
     } catch (error) {
         console.error('Failed to register global hotkey:', error);
     }
+
+    return Boolean(registeredHotkey);
 }
 
 function createTray() {
@@ -103,6 +105,13 @@ function createTray() {
     const trayIcon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVR4nGO0bvr2n4ECwESJ5lEDRg0YNWAwGQAAMLgC0lzzz3wAAAAASUVORK5CYII=');
     tray = new Tray(trayIcon);
     tray.setToolTip('My Launcher');
+    tray.on('click', () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        if (mainWindow.isVisible()) mainWindow.hide();
+        else mainWindow.show();
+        if (mainWindow.isVisible()) mainWindow.focus();
+    });
     tray.setContextMenu(Menu.buildFromTemplate([
         {
             label: 'Open My Launcher',
@@ -146,8 +155,9 @@ function applyBehaviorSettings(settings = {}) {
         startMinimized = settings.startMinimized;
     }
 
+    let hotkeyOk = true;
     if (typeof settings.hotkey === 'string') {
-        registerGlobalHotkey(settings.hotkey);
+        hotkeyOk = registerGlobalHotkey(settings.hotkey);
     }
 
     saveBehaviorSettings({
@@ -156,6 +166,8 @@ function applyBehaviorSettings(settings = {}) {
         startMinimized: Boolean(settings.startMinimized),
         hotkey: typeof settings.hotkey === 'string' ? settings.hotkey : 'disabled'
     });
+
+    return hotkeyOk;
 }
 
 
@@ -937,6 +949,8 @@ ipcMain.handle(
                 await dialog.showOpenDialog({
 
                     title: 'Select Windows Application',
+                    parent: mainWindow || undefined,
+                    modal: Boolean(mainWindow),
 
                     properties: [
                         'openFile'
