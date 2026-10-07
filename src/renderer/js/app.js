@@ -9,6 +9,93 @@ const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
 
 let contextMenuItem = null;
 
+/* ==============================
+   Selection State
+================================= */
+
+const selectionState = {
+    active: false,
+    scope: null,
+    categoryId: null,
+    selectedItemIds: new Set(),
+    selectedCategoryIds: new Set()
+};
+
+function clearSelection() {
+    selectionState.active = false;
+    selectionState.scope = null;
+    selectionState.categoryId = null;
+    selectionState.selectedItemIds.clear();
+    selectionState.selectedCategoryIds.clear();
+}
+
+function enterSelectionMode(scope, categoryId = null, initialItemId = null) {
+    clearSelection();
+
+    selectionState.active = true;
+    selectionState.scope = scope;
+    selectionState.categoryId =
+        categoryId === null || categoryId === undefined
+            ? null
+            : Number(categoryId);
+
+    if (initialItemId !== null && initialItemId !== undefined) {
+        selectionState.selectedItemIds.add(Number(initialItemId));
+    }
+}
+
+function exitSelectionMode() {
+    clearSelection();
+}
+
+function isItemSelected(itemId) {
+    return selectionState.selectedItemIds.has(Number(itemId));
+}
+
+function isCategorySelected(categoryId) {
+    return selectionState.selectedCategoryIds.has(Number(categoryId));
+}
+
+function toggleItemSelection(itemId) {
+    const id = Number(itemId);
+
+    if (selectionState.selectedItemIds.has(id)) {
+        selectionState.selectedItemIds.delete(id);
+    } else {
+        selectionState.selectedItemIds.add(id);
+    }
+}
+
+function toggleCategorySelection(categoryId) {
+    const id = Number(categoryId);
+
+    if (selectionState.selectedCategoryIds.has(id)) {
+        selectionState.selectedCategoryIds.delete(id);
+    } else {
+        selectionState.selectedCategoryIds.add(id);
+    }
+}
+
+function getSelectedItemIds() {
+    return [...selectionState.selectedItemIds];
+}
+
+function getSelectedCategoryIds() {
+    return [...selectionState.selectedCategoryIds];
+}
+
+function isSelectionModeActive() {
+    return selectionState.active;
+}
+
+function getSelectionCount() {
+    if (selectionState.scope === "categories") {
+        return selectionState.selectedCategoryIds.size;
+    }
+
+    return selectionState.selectedItemIds.size;
+}
+
 let deleteTargetItem = null;
 
 let editingItemId = null;
@@ -1114,6 +1201,7 @@ const sortSelect = document.querySelector("#sort-select");
 ================================= */
 
 function showPage(pageName) {
+    clearSelection();
     Object.values(pageSections).forEach((section) => {
         if (section) section.classList.remove("active-page");
     });
@@ -1196,6 +1284,7 @@ async function handleConfirmAction() {
     }
 
     if (action === "all") {
+        clearSelection();
         const oldItems = [...launcherItems];
         const oldCategories = [...launcherCategories];
         launcherItems = [];
@@ -3036,7 +3125,10 @@ function applySearch() {
     });
 }
 
-searchInput.addEventListener("input", applySearch);
+searchInput.addEventListener("input", () => {
+    clearSelection();
+    applySearch();
+});
 
 if (sortSelect) {
     sortSelect.addEventListener("change", () => {
