@@ -275,6 +275,202 @@ const cancelCategoryButton = document.querySelector("#cancel-category");
 const categoryForm = document.querySelector("#category-form");
 const categoryNameInput = document.querySelector("#category-name");
 
+const categorySourceDialog = document.querySelector("#category-source-dialog");
+const categoryNewButton = document.querySelector("#category-new-button");
+const categoryExistingButton = document.querySelector("#category-existing-button");
+const closeCategorySourceDialog = document.querySelector("#close-category-source-dialog");
+
+const launcherPickerDialog = document.querySelector("#launcher-picker-dialog");
+const closeLauncherPicker = document.querySelector("#close-launcher-picker");
+const launcherPickerSearch = document.querySelector("#launcher-picker-search");
+const launcherPickerList = document.querySelector("#launcher-picker-list");
+
+
+
+function openCategorySourceDialog() {
+    categorySourceDialog.style.display = "flex";
+}
+
+function closeCategorySourceDialogDialog() {
+    categorySourceDialog.style.display = "none";
+}
+
+function openCategoryNewFlow() {
+    closeCategorySourceDialogDialog();
+    openAddDialog();
+    document.querySelector(".dialog-header h3").textContent =
+        "Add Item to Category";
+}
+
+function getLauncherTypeLabel(type) {
+    if (type === "application") return "Application";
+    if (type === "webapp") return "Web App";
+    return "Website";
+}
+
+function renderLauncherPicker() {
+    if (!launcherPickerList) {
+        return;
+    }
+
+    const query = launcherPickerSearch.value.trim().toLowerCase();
+    launcherPickerList.innerHTML = "";
+
+    const filteredItems = launcherItems.filter((item) => {
+        const name = String(item.name || "").toLowerCase();
+        const type = getLauncherTypeLabel(item.type).toLowerCase();
+        const target = String(item.target || "").toLowerCase();
+
+        return (
+            !query ||
+            name.includes(query) ||
+            type.includes(query) ||
+            target.includes(query)
+        );
+    });
+
+    if (filteredItems.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "launcher-picker-empty";
+        empty.textContent = launcherItems.length === 0
+            ? "No launcher items have been added yet."
+            : "No matching launcher items found.";
+        launcherPickerList.appendChild(empty);
+        return;
+    }
+
+    filteredItems.forEach((item) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "launcher-picker-item";
+
+        const icon = document.createElement("div");
+        icon.className = "launcher-picker-icon";
+
+        if (item.favicon) {
+            const image = document.createElement("img");
+            image.src = item.favicon;
+            image.alt = "";
+            icon.appendChild(image);
+        } else {
+            icon.textContent = item.type === "application" ? "APP" : "WEB";
+        }
+
+        const info = document.createElement("div");
+        info.className = "launcher-picker-info";
+
+        const name = document.createElement("strong");
+        name.textContent = item.name;
+
+        const type = document.createElement("span");
+        type.textContent = getLauncherTypeLabel(item.type);
+
+        info.appendChild(name);
+        info.appendChild(type);
+
+        row.appendChild(icon);
+        row.appendChild(info);
+
+        row.addEventListener("click", async () => {
+            if (pendingCategoryId === null) {
+                closeLauncherPickerDialog();
+                return;
+            }
+
+            const alreadyInCategory = launcherItems.some(
+                (entry) =>
+                    entry.categoryId === pendingCategoryId &&
+                    entry.sourceItemId === item.id
+            );
+
+            if (alreadyInCategory) {
+                showMessage(
+                    "Already Added",
+                    '"' + item.name + '" is already in this category.'
+                );
+                return;
+            }
+
+            const copiedItem = {
+                ...item,
+                id: Date.now(),
+                categoryId: pendingCategoryId,
+                sourceItemId: item.id
+            };
+
+            launcherItems.push(copiedItem);
+
+            const saved = await saveLauncherItems(launcherItems);
+
+            if (!saved) {
+                launcherItems.pop();
+                showMessage("Save Failed", "The launcher could not be added to this category.");
+                return;
+            }
+
+            closeLauncherPickerDialog();
+            renderItems();
+            renderCategories();
+        });
+
+        launcherPickerList.appendChild(row);
+    });
+}
+
+function openLauncherPickerDialog() {
+    closeCategorySourceDialogDialog();
+    launcherPickerSearch.value = "";
+    renderLauncherPicker();
+    launcherPickerDialog.style.display = "flex";
+    launcherPickerSearch.focus();
+}
+
+function closeLauncherPickerDialog() {
+    launcherPickerDialog.style.display = "none";
+    launcherPickerSearch.value = "";
+}
+
+if (categoryNewButton) {
+    categoryNewButton.addEventListener("click", openCategoryNewFlow);
+}
+
+if (categoryExistingButton) {
+    categoryExistingButton.addEventListener("click", openLauncherPickerDialog);
+}
+
+if (closeCategorySourceDialog) {
+    closeCategorySourceDialog.addEventListener(
+        "click",
+        closeCategorySourceDialogDialog
+    );
+}
+
+if (closeLauncherPicker) {
+    closeLauncherPicker.addEventListener(
+        "click",
+        closeLauncherPickerDialog
+    );
+}
+
+if (categorySourceDialog) {
+    categorySourceDialog.addEventListener("click", (event) => {
+        if (event.target === categorySourceDialog) {
+            closeCategorySourceDialogDialog();
+        }
+    });
+}
+
+if (launcherPickerDialog) {
+    launcherPickerDialog.addEventListener("click", (event) => {
+        if (event.target === launcherPickerDialog) {
+            closeLauncherPickerDialog();
+        }
+    });
+}
+
+if (launcherPickerSearch) {
+    launcherPickerSearch.addEventListener("input", renderLauncherPicker);
+}
 
 function loadLauncherCategories() {
     try {
@@ -344,9 +540,7 @@ function createCategoryCard(category) {
     addLauncherButton.textContent = "+ Add Launcher";
     addLauncherButton.addEventListener("click", () => {
         pendingCategoryId = category.id;
-        openAddDialog();
-        document.querySelector(".dialog-header h3").textContent =
-            "Add Item to " + category.name;
+        openCategorySourceDialog();
     });
 
     sectionHeader.appendChild(titleWrap);
