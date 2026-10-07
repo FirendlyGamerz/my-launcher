@@ -62,6 +62,14 @@ function saveSettings() {
         console.error("Failed to save settings:", error);
     }
     applySettings();
+    if (window.launcherAPI && window.launcherAPI.applyBehaviorSettings) {
+        window.launcherAPI.applyBehaviorSettings({
+            autoStart: Boolean(appSettings.autoStart),
+            minimizeToTray: Boolean(appSettings.minimizeToTray),
+            startMinimized: Boolean(appSettings.startMinimized),
+            hotkey: appSettings.hotkey
+        }).catch((error) => console.error("Failed to apply behavior settings:", error));
+    }
 }
 
 function applySettings() {
@@ -1561,10 +1569,7 @@ websiteForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    if (!websiteCheck.available) {
-        showMessage("Website Not Reachable", "This website could not be reached right now.");
-        return;
-    }
+
 
     const favicon = await window.launcherAPI.fetchFavicon(websiteCheck.url);
 
@@ -1659,8 +1664,8 @@ webappForm.addEventListener("submit", async (event) => {
     saveWebappButton.disabled = false;
     saveWebappButton.textContent = editingItemId !== null ? "Update" : "Save";
 
-    if (!websiteCheck || !websiteCheck.valid || !websiteCheck.available) {
-        showMessage("Invalid Web App", "The web app address is not valid or reachable.");
+    if (!websiteCheck || !websiteCheck.valid) {
+        showMessage("Invalid Web App", "The web app address is not valid.");
         return;
     }
 
