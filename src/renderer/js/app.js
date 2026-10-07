@@ -708,6 +708,7 @@ function closeAddDialog() {
     websiteForm.reset();
     webappForm.reset();
     applicationForm.reset();
+    pendingCategoryId = null;
 }
 
 if (addButton) addButton.addEventListener("click", openAddDialog);
@@ -894,7 +895,10 @@ websiteForm.addEventListener("submit", async (event) => {
             type: "website",
             target: websiteCheck.url,
             favorite: favorite,
-            favicon: favicon || null
+            favicon: favicon || null,
+            ...(pendingCategoryId !== null
+                ? { categoryId: pendingCategoryId }
+                : {})
         });
     }
 
@@ -974,7 +978,10 @@ webappForm.addEventListener("submit", async (event) => {
             type: "webapp",
             target: websiteCheck.url,
             favorite: favorite,
-            favicon: favicon || null
+            favicon: favicon || null,
+            ...(pendingCategoryId !== null
+                ? { categoryId: pendingCategoryId }
+                : {})
         });
     }
 
@@ -1088,7 +1095,10 @@ applicationForm.addEventListener("submit", async (event) => {
             type: "application",
             target: applicationPath,
             favorite: favorite,
-            favicon: applicationIcon || null
+            favicon: applicationIcon || null,
+            ...(pendingCategoryId !== null
+                ? { categoryId: pendingCategoryId }
+                : {})
         });
     }
 
