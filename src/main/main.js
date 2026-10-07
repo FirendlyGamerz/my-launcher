@@ -21,6 +21,34 @@ const dataFile = path.join(
     app.getPath('userData'),
     'launcher-data.json'
 );
+const behaviorSettingsFile = path.join(
+    app.getPath('userData'),
+    'launcher-behavior.json'
+);
+
+let isQuitting = false;
+
+function loadBehaviorSettings() {
+    try {
+        if (!fs.existsSync(behaviorSettingsFile)) return {};
+        const value = JSON.parse(fs.readFileSync(behaviorSettingsFile, 'utf8'));
+        return value && typeof value === 'object' ? value : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveBehaviorSettings(settings) {
+    try {
+        const tempFile = behaviorSettingsFile + '.tmp';
+        fs.writeFileSync(tempFile, JSON.stringify(settings, null, 2), 'utf8');
+        fs.renameSync(tempFile, behaviorSettingsFile);
+        return true;
+    } catch (error) {
+        console.error('Failed to save behavior settings:', error);
+        return false;
+    }
+}
 
 const imagesDir = app.isPackaged
     ? path.join(
@@ -37,6 +65,7 @@ if (!fs.existsSync(imagesDir)) {
 }
 
 const webAppWindows = new Map();
+let dataLoadBlocked = false;
 
 let mainWindow = null;
 let tray = null;
@@ -50,21 +79,24 @@ function registerGlobalHotkey(accelerator) {
         registeredHotkey = null;
     }
 
-    if (!accelerator) return;
+    if (!accelerator || accelerator === 'disabled') return true;
 
     try {
         if (globalShortcut.register(accelerator, () => {
             if (!mainWindow || mainWindow.isDestroyed()) return;
-            if (mainWindow.isMinimized() || !mainWindow.isVisible()) {
-                mainWindow.show();
-            }
-            mainWindow.focus();
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            if (!mainWindow.isVisible()) mainWindow.show();
+            else if (mainWindow.isFocused()) mainWindow.hide();
+            else mainWindow.show();
+            if (mainWindow.isVisible()) mainWindow.focus();
         })) {
             registeredHotkey = accelerator;
         }
     } catch (error) {
         console.error('Failed to register global hotkey:', error);
     }
+
+    return Boolean(registeredHotkey);
 }
 
 function createTray() {
@@ -73,6 +105,13 @@ function createTray() {
     const trayIcon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVR4nGO0bvr2n4ECwESJ5lEDRg0YNWAwGQAAMLgC0lzzz3wAAAAASUVORK5CYII=');
     tray = new Tray(trayIcon);
     tray.setToolTip('My Launcher');
+    tray.on('click', () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        if (mainWindow.isVisible()) mainWindow.hide();
+        else mainWindow.show();
+        if (mainWindow.isVisible()) mainWindow.focus();
+    });
     tray.setContextMenu(Menu.buildFromTemplate([
         {
             label: 'Open My Launcher',
@@ -86,7 +125,7 @@ function createTray() {
         {
             label: 'Exit',
             click: () => {
-                app.isQuitting = true;
+                isQuitting = true;
                 if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
                 app.quit();
             }
@@ -116,9 +155,19 @@ function applyBehaviorSettings(settings = {}) {
         startMinimized = settings.startMinimized;
     }
 
+    let hotkeyOk = true;
     if (typeof settings.hotkey === 'string') {
-        registerGlobalHotkey(settings.hotkey);
+        hotkeyOk = registerGlobalHotkey(settings.hotkey);
     }
+
+    saveBehaviorSettings({
+        autoStart: Boolean(settings.autoStart),
+        minimizeToTray: Boolean(settings.minimizeToTray),
+        startMinimized: Boolean(settings.startMinimized),
+        hotkey: typeof settings.hotkey === 'string' ? settings.hotkey : 'disabled'
+    });
+
+    return hotkeyOk;
 }
 
 
@@ -153,7 +202,7 @@ function createWindow() {
     mainWindow = window;
 
     window.on('close', (event) => {
-        if (trayEnabled && !app.isQuitting) {
+        if (trayEnabled && !isQuitting) {
             event.preventDefault();
             window.hide();
         }
@@ -176,6 +225,68 @@ function createWindow() {
 ipcMain.handle('apply-behavior-settings', (event, settings) => {
     applyBehaviorSettings(settings || {});
     return true;
+});
+
+ipcMain.handle('check-for-updates', async () => {
+    const currentVersion = app.getVersion();
+
+    return await new Promise((resolve) => {
+        const request = https.get(
+            'https://api.github.com/repos/FirendlyGamerz/my-launcher/releases/latest',
+            {
+                headers: {
+                    'User-Agent': 'My-Launcher',
+                    'Accept': 'application/vnd.github+json'
+                },
+                timeout: 5000
+            },
+            (response) => {
+                let body = '';
+                response.setEncoding('utf8');
+                response.on('data', (chunk) => { body += chunk; });
+                response.on('end', () => {
+                    if (response.statusCode !== 200) {
+                        resolve({
+                            success: false,
+                            message: response.statusCode === 404
+                                ? 'No GitHub release has been published yet.'
+                                : 'GitHub could not be reached right now.'
+                        });
+                        return;
+                    }
+
+                    try {
+                        const release = JSON.parse(body);
+                        const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
+                        const current = currentVersion.split('.').map(Number);
+                        const latest = latestVersion.split('.').map(Number);
+                        const updateAvailable =
+                            latest.length >= 2 &&
+                            latest.some((value, index) => Number(value || 0) > Number(current[index] || 0));
+
+                        resolve({
+                            success: true,
+                            currentVersion,
+                            latestVersion,
+                            updateAvailable,
+                            url: release.html_url || null
+                        });
+                    } catch {
+                        resolve({ success: false, message: 'GitHub returned invalid release data.' });
+                    }
+                });
+            }
+        );
+
+        request.on('timeout', () => {
+            request.destroy();
+            resolve({ success: false, message: 'Update check timed out.' });
+        });
+
+        request.on('error', () => {
+            resolve({ success: false, message: 'Could not connect to GitHub.' });
+        });
+    });
 });
 
 ipcMain.handle('load-launcher-data', () => {
@@ -211,6 +322,7 @@ ipcMain.handle('load-launcher-data', () => {
             console.error('Failed to preserve corrupt launcher data:', backupError);
         }
 
+        dataLoadBlocked = true;
         return [];
     }
 
@@ -219,14 +331,20 @@ ipcMain.handle('load-launcher-data', () => {
 
 ipcMain.handle(
     'save-launcher-data',
-    (event, items) => {
+    (event, items, options = {}) => {
 
         try {
+
+            if (dataLoadBlocked && !options.force) {
+                console.error('Refusing to overwrite launcher data after a corruption was detected.');
+                return false;
+            }
 
             const serialized = JSON.stringify(items, null, 4);
         const tempFile = dataFile + '.tmp';
         fs.writeFileSync(tempFile, serialized, 'utf8');
         fs.renameSync(tempFile, dataFile);
+        dataLoadBlocked = false;
 
         return true;
 
@@ -264,10 +382,39 @@ ipcMain.handle('fetch-favicon', async (event, targetUrl) => {
 
         const faviconApiUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
-        const fetchImageWithRedirects = (url, resolve) => {
-            https.get(url, (res) => {
+        const fetchImageWithRedirects = (url, resolve, redirects = 0) => {
+            if (redirects > 5) {
+                resolve(null);
+                return;
+            }
+
+            let requestUrl;
+            try {
+                requestUrl = new URL(url);
+                if (requestUrl.protocol !== 'https:') {
+                    resolve(null);
+                    return;
+                }
+            } catch {
+                resolve(null);
+                return;
+            }
+
+            const request = https.get(requestUrl, (res) => {
                 if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                    return fetchImageWithRedirects(res.headers.location, resolve);
+                    try {
+                        const nextUrl = new URL(res.headers.location, requestUrl);
+                        if (nextUrl.protocol !== 'https:') {
+                            resolve(null);
+                            res.resume();
+                            return;
+                        }
+                        return fetchImageWithRedirects(nextUrl.href, resolve, redirects + 1);
+                    } catch {
+                        resolve(null);
+                        res.resume();
+                        return;
+                    }
                 }
 
                 if (res.statusCode === 200) {
@@ -287,7 +434,12 @@ ipcMain.handle('fetch-favicon', async (event, targetUrl) => {
                 } else {
                     resolve(null);
                 }
-            }).on('error', () => resolve(null));
+            });
+            request.setTimeout(5000, () => {
+                request.destroy();
+                resolve(null);
+            });
+            request.on('error', () => resolve(null));
         };
 
         return new Promise((resolve) => {
@@ -608,29 +760,6 @@ ipcMain.handle(
             }
 
 
-            const bravePath =
-                findBravePath();
-
-
-            if (bravePath) {
-
-                const braveProcess =
-                    spawn(
-                        bravePath,
-                        [url],
-                        {
-                            detached: true,
-                            stdio: 'ignore'
-                        }
-                    );
-
-                braveProcess.unref();
-
-                return true;
-
-            }
-
-
             await shell.openExternal(url);
 
             return true;
@@ -692,7 +821,10 @@ ipcMain.handle(
                 existingWindow &&
                 !existingWindow.isDestroyed()
             ) {
-
+                if (existingWindow.__launcherUrl !== parsedUrl.href) {
+                    existingWindow.__launcherUrl = parsedUrl.href;
+                    await existingWindow.loadURL(parsedUrl.href);
+                }
                 existingWindow.show();
                 existingWindow.focus();
 
@@ -700,7 +832,6 @@ ipcMain.handle(
                     success: true,
                     existing: true
                 };
-
             }
 
             const webAppWindow =
@@ -738,10 +869,8 @@ ipcMain.handle(
 
                 });
 
-            webAppWindows.set(
-                itemId,
-                webAppWindow
-            );
+            webAppWindow.__launcherUrl = parsedUrl.href;
+            webAppWindows.set(itemId, webAppWindow);
 
             webAppWindow.on(
                 'closed',
@@ -772,24 +901,17 @@ ipcMain.handle(
                 }
             );
 
-            webAppWindow.loadURL(
-                parsedUrl.href
-            ).catch((error) => {
-                if (
-                    error &&
-                    error.code === 'ERR_FAILED'
-                ) {
-                    return;
-                }
+            webAppWindow.loadURL(parsedUrl.href).catch(async (error) => {
+                console.error('Web app page failed to load:', error);
+                if (webAppWindow.isDestroyed()) return;
 
-                if (
-                    !webAppWindow.isDestroyed()
-                ) {
-                    console.error(
-                        'Web app page failed to load:',
-                        error
-                    );
-                }
+                const message = String(error && error.message || 'The page could not be loaded.')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;');
+
+                const errorHtml = `<!doctype html><html><body style="background:#080808;color:#f5f5f5;font-family:Arial;padding:48px"><h2>Web App could not be loaded</h2><p>${message}</p><button onclick="location.reload()">Retry</button></body></html>`;
+                await webAppWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml));
             });
 
             return {
@@ -827,6 +949,8 @@ ipcMain.handle(
                 await dialog.showOpenDialog({
 
                     title: 'Select Windows Application',
+                    parent: mainWindow || undefined,
+                    modal: Boolean(mainWindow),
 
                     properties: [
                         'openFile'
@@ -999,25 +1123,41 @@ ipcMain.handle(
             }
 
 
-            const applicationProcess =
-                spawn(
-                    normalizedPath,
-                    [],
-                    {
-                        detached: true,
-                        stdio: 'ignore',
-                        windowsHide: false
-                    }
-                );
+            const applicationProcess = spawn(
+                normalizedPath,
+                [],
+                {
+                    detached: true,
+                    stdio: 'ignore',
+                    windowsHide: false,
+                    cwd: path.dirname(normalizedPath)
+                }
+            );
 
+            return await new Promise((resolve) => {
+                let settled = false;
+                const finish = (result) => {
+                    if (settled) return;
+                    settled = true;
+                    applicationProcess.unref();
+                    resolve(result);
+                };
 
-            applicationProcess.unref();
+                applicationProcess.once('error', (error) => {
+                    console.error('Application process failed:', error);
+                    finish({
+                        success: false,
+                        message: 'Windows could not start this application.'
+                    });
+                });
 
-
-            return {
-                success: true,
-                message: null
-            };
+                setTimeout(() => {
+                    finish({
+                        success: true,
+                        message: null
+                    });
+                }, 150);
+            });
 
         }
 
@@ -1077,8 +1217,26 @@ ipcMain.handle(
 );
 
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+    app.quit();
+} else {
 app.whenReady().then(() => {
+    applyBehaviorSettings({
+        ...loadBehaviorSettings()
+    });
     createWindow();
+});
+
+app.on('second-instance', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+});
+
+app.on('before-quit', () => {
+    isQuitting = true;
 });
 
 app.on('will-quit', () => {
@@ -1088,3 +1246,4 @@ app.on('will-quit', () => {
     }
     destroyTray();
 });
+}

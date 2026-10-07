@@ -10,15 +10,18 @@ contextBridge.exposeInMainWorld(
         ),
 
 
-        saveData: (items) => ipcRenderer.invoke(
+        saveData: (items, options = {}) => ipcRenderer.invoke(
             'save-launcher-data',
-            items
+            items,
+            options
         ),
 
         applyBehaviorSettings: (settings) => ipcRenderer.invoke(
             'apply-behavior-settings',
             settings
         ),
+
+        checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 
 
         openWebsite: (url) => ipcRenderer.invoke(
