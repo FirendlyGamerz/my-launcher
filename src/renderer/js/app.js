@@ -1036,7 +1036,11 @@ async function handleConfirmAction() {
         localStorage.removeItem(CATEGORIES_STORAGE_KEY);
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
-        await saveLauncherItems(launcherItems);
+        const saved = await saveLauncherItems(launcherItems);
+        if (!saved) {
+            showMessage("Reset Failed", "The launcher data could not be reset because it could not be saved.");
+            return;
+        }
         applySettings();
         renderItems();
         showMessage("Reset Complete", "All launcher items and settings have been reset.");
@@ -1393,10 +1397,14 @@ function getWebsiteKey(url) {
         while (pathname.length > 1 && pathname.endsWith("/")) {
             pathname = pathname.slice(0, -1);
         }
-        return hostname + pathname + parsedUrl.search;
+        return parsedUrl.protocol.toLowerCase() + "//" + hostname + (parsedUrl.port ? ":" + parsedUrl.port : "") + pathname + parsedUrl.search;
     } catch {
         return null;
     }
+}
+
+function isCategoryCopy(item) {
+    return item && item.categoryId !== undefined && item.categoryId !== null;
 }
 
 function findDuplicateWebsite(url, ignoredItemId = null) {
@@ -1404,8 +1412,8 @@ function findDuplicateWebsite(url, ignoredItemId = null) {
     if (!newKey) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "website") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "website" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return getWebsiteKey(item.target) === newKey;
     }) || null;
 }
@@ -1415,8 +1423,8 @@ function findDuplicateWebApp(url, ignoredItemId = null) {
     if (!newKey) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "webapp") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "webapp" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return getWebsiteKey(item.target) === newKey;
     }) || null;
 }
@@ -1512,6 +1520,7 @@ websiteForm.addEventListener("submit", async (event) => {
         item.target = websiteCheck.url;
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
@@ -1609,6 +1618,7 @@ webappForm.addEventListener("submit", async (event) => {
         item.target = websiteCheck.url;
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
@@ -1654,10 +1664,26 @@ function findDuplicateApplication(applicationPath, ignoredItemId = null) {
     if (!newPath) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "application") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "application" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return normalizeApplicationPath(item.target) === newPath;
     }) || null;
+}
+
+function syncOriginalItemToCategoryCopies(item) {
+    if (!item || isCategoryCopy(item)) return;
+
+    launcherItems.forEach((copy) => {
+        if (Number(copy.sourceItemId) !== Number(item.id) || !isCategoryCopy(copy)) return;
+        copy.name = item.name;
+        copy.type = item.type;
+        copy.target = item.target;
+        copy.favorite = Boolean(item.favorite);
+        copy.favicon = item.favicon || null;
+        if (item.type === "application") {
+            copy.missing = Boolean(item.missing);
+        }
+    });
 }
 
 browseApplicationButton.addEventListener("click", async () => {
@@ -2599,7 +2625,12 @@ deleteConfirm.addEventListener("click", async () => {
     }
 
     if (!deleteTargetItem) return;
-    launcherItems = launcherItems.filter((entry) => entry.id !== deleteTargetItem.id);
+    const deletedId = Number(deleteTargetItem.id);
+    launcherItems = launcherItems.filter(
+        (entry) =>
+            Number(entry.id) !== deletedId &&
+            Number(entry.sourceItemId) !== deletedId
+    );
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Delete Failed", "The item could not be deleted.");
