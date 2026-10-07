@@ -1567,6 +1567,7 @@ websiteForm.addEventListener("submit", async (event) => {
     }
     if (duplicate) {
         showMessage("Already Added", `"${duplicate.name}" is already saved with this website address.`);
+        submittingItemForm = false;
         return;
     }
 
@@ -1674,6 +1675,7 @@ webappForm.addEventListener("submit", async (event) => {
     }
     if (duplicate) {
         showMessage("Already Added", `"${duplicate.name}" is already saved with this web app address.`);
+        submittingItemForm = false;
         return;
     }
 
@@ -1707,7 +1709,7 @@ webappForm.addEventListener("submit", async (event) => {
         item.name = name;
         item.target = websiteCheck.url;
         item.favorite = favorite;
-        if (favicon) item.favicon = favicon;
+        item.favicon = favicon || null;
         syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
@@ -1737,6 +1739,7 @@ webappForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    submittingItemForm = false;
     renderItems();
     closeAddDialog();
 });
@@ -1843,6 +1846,7 @@ applicationForm.addEventListener("submit", async (event) => {
 
     if (duplicateApplication) {
         showMessage("Already Added", `"${duplicateApplication.name}" is already saved with this path.`);
+        submittingItemForm = false;
         return;
     }
 
