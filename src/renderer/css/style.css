@@ -661,6 +661,14 @@ body {
     display: inline-flex;
 }
 
+.selection-mode[data-selection-scope="categories"] .category-selection-exit {
+    display: none;
+}
+
+.selection-mode[data-selection-scope="category-items"] .category-selection-exit {
+    display: none;
+}
+
 .selection-section-header .selection-heading {
     width: fit-content;
 }
