@@ -2156,7 +2156,7 @@ input:checked + .slider:before {
     justify-content: center;
     padding: 16px;
     background: rgba(0, 0, 0, 0.72);
-    z-index: 260;
+    z-index: 310;
 }
 
 .category-dialog-box {
