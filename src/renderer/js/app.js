@@ -1519,7 +1519,8 @@ function addItemToCategory(originalItem, categoryId) {
         ...originalItem,
         id: Date.now() + Math.floor(Math.random() * 100000),
         categoryId,
-        sourceItemId: originalItem.id
+        sourceItemId: originalItem.id,
+        customName: false
     });
 }
 
@@ -1843,6 +1844,7 @@ applicationForm.addEventListener("submit", async (event) => {
         if (applicationIcon) {
             item.favicon = applicationIcon;
         }
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
