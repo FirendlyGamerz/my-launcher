@@ -1291,6 +1291,7 @@ deleteConfirm.addEventListener("click", async () => {
 
 function applySearch() {
     const query = searchInput.value.trim().toLowerCase();
+    const normalizedQuery = query.replace(/\s+/g, "");
 
     document.querySelectorAll(".search-empty-state").forEach((state) => {
         state.remove();
@@ -1310,12 +1311,13 @@ function applySearch() {
 
             const name = String(item.name || "").toLowerCase();
             const type = String(item.type || "").toLowerCase();
+            const normalizedType = type.replace(/\s+/g, "");
             const target = String(item.target || "").toLowerCase();
 
             const matches =
                 !query ||
                 name.includes(query) ||
-                type.includes(query) ||
+                normalizedType.includes(normalizedQuery) ||
                 target.includes(query);
 
             card.style.display = matches ? "" : "none";
