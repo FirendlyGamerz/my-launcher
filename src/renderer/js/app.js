@@ -283,7 +283,19 @@ function syncSelectionUI() {
 }
 
 function startSelection(scope, categoryId = null, initialItemId = null) {
-    enterSelectionMode(scope, categoryId, initialItemId);
+    enterSelectionMode(
+        scope,
+        categoryId,
+        scope === "categories" ? null : initialItemId
+    );
+
+    if (
+        scope === "categories" &&
+        initialItemId !== null &&
+        initialItemId !== undefined
+    ) {
+        selectionState.selectedCategoryIds.add(Number(initialItemId));
+    }
 
     if (scope === "categories") {
         renderCategories();
@@ -1150,7 +1162,47 @@ function createCategoryCard(category) {
 
     sectionHeader.appendChild(titleWrap);
 
+    let longPressTimer = null;
+    let longPressTriggered = false;
+
+    const clearLongPress = () => {
+        if (longPressTimer !== null) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    card.addEventListener("mousedown", (event) => {
+        if (
+            event.button !== 0 ||
+            selectionState.active ||
+            event.target.closest("button, input, a, .app-card")
+        ) {
+            return;
+        }
+
+        longPressTriggered = false;
+        clearLongPress();
+
+        longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            longPressTriggered = true;
+            startSelection("categories", null, category.id);
+        }, 500);
+    });
+
+    card.addEventListener("mouseup", clearLongPress);
+    card.addEventListener("mouseleave", clearLongPress);
+    card.addEventListener("dragstart", clearLongPress);
+
     card.addEventListener("click", (event) => {
+        if (longPressTriggered) {
+            longPressTriggered = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         if (event.target.closest(".app-card")) {
             return;
         }
@@ -2641,7 +2693,62 @@ function createCard(item) {
     type.textContent = cardTypeLabel;
     card.appendChild(type);
 
+    let longPressTimer = null;
+    let longPressTriggered = false;
+
+    const clearLongPress = () => {
+        if (longPressTimer !== null) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    card.addEventListener("mousedown", (event) => {
+        if (
+            event.button !== 0 ||
+            selectionState.active ||
+            event.target.closest("button, input, a")
+        ) {
+            return;
+        }
+
+        longPressTriggered = false;
+        clearLongPress();
+
+        longPressTimer = setTimeout(() => {
+            longPressTimer = null;
+            longPressTriggered = true;
+
+            if (item.categoryId !== undefined && item.categoryId !== null) {
+                startSelection(
+                    "category-items",
+                    Number(item.categoryId),
+                    item.id
+                );
+            } else if (item.type === "website") {
+                startSelection("websites", null, item.id);
+            } else if (item.type === "webapp") {
+                startSelection("webapps", null, item.id);
+            } else if (item.type === "application") {
+                startSelection("applications", null, item.id);
+            } else {
+                startSelection("home", null, item.id);
+            }
+        }, 500);
+    });
+
+    card.addEventListener("mouseup", clearLongPress);
+    card.addEventListener("mouseleave", clearLongPress);
+    card.addEventListener("dragstart", clearLongPress);
+
     card.addEventListener("click", (event) => {
+        if (longPressTriggered) {
+            longPressTriggered = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         if (selectionState.active && selectionState.scope !== "categories") {
             event.preventDefault();
             toggleItemSelection(item.id);
