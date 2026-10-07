@@ -352,6 +352,69 @@ body {
    App Cards
 ================================= */
 
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#sort-select {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+#sort-select:focus {
+    border-color: var(--accent-color);
+}
+
+#launcher-toast {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    z-index: 500;
+    max-width: min(320px, calc(100vw - 40px));
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-dialog);
+    color: var(--text-primary);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+#launcher-toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.settings-action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+    .search-container {
+        gap: 6px;
+    }
+
+    #sort-select {
+        max-width: 130px;
+    }
+}
+
 .search-empty-state {
     grid-column: 1 / -1;
     padding: 48px 20px;
