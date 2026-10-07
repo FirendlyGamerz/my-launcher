@@ -1842,3 +1842,154 @@ input:checked + .slider:before {
         height: 36px;
     }
 }
+
+
+/* ==============================
+   Settings Responsive Layout
+================================= */
+
+.settings-container {
+    width: 100%;
+    max-width: 720px;
+}
+
+.setting-item {
+    min-width: 0;
+    gap: 24px;
+}
+
+.setting-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.setting-control {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.setting-control select {
+    max-width: 100%;
+}
+
+@media (max-width: 700px) {
+    .settings-container {
+        width: 100%;
+    }
+
+    .settings-group {
+        width: 100%;
+        padding: 16px;
+    }
+
+    .setting-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .setting-info {
+        min-width: 0;
+    }
+
+    .setting-info label,
+    .setting-info p {
+        overflow-wrap: anywhere;
+    }
+
+    .setting-control {
+        max-width: 100%;
+    }
+
+    .setting-control select {
+        width: 100%;
+        min-width: 130px;
+    }
+
+    .setting-control.accent-picker {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 150px;
+    }
+
+    .settings-action-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 100%;
+    }
+
+    .settings-action-group .action-button {
+        flex: 1 1 130px;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 500px) {
+    .settings-group {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .settings-group h3 {
+        font-size: 15px;
+    }
+
+    .setting-item {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 9px;
+        padding: 14px 0;
+    }
+
+    .setting-control {
+        width: 100%;
+    }
+
+    .setting-control select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .setting-control.accent-picker {
+        max-width: none;
+        justify-content: flex-start;
+    }
+
+    .settings-action-group {
+        width: 100%;
+        max-width: none;
+        justify-content: stretch;
+    }
+
+    .settings-action-group .action-button {
+        flex: 1 1 100%;
+        max-width: none;
+        width: 100%;
+    }
+
+    .toggle-switch {
+        width: 44px;
+    }
+
+    .setting-control > .toggle-switch {
+        display: block;
+    }
+}
+
+@media (max-width: 360px) {
+    .settings-group {
+        padding: 12px;
+    }
+
+    .setting-info label {
+        font-size: 13px;
+    }
+
+    .setting-info p {
+        font-size: 11px;
+        line-height: 1.45;
+    }
+}
