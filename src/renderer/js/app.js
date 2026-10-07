@@ -45,6 +45,14 @@ function loadSettings() {
         console.error("Failed to load settings:", error);
     }
     applySettings();
+    if (window.launcherAPI && window.launcherAPI.applyBehaviorSettings) {
+        window.launcherAPI.applyBehaviorSettings({
+            autoStart: Boolean(appSettings.autoStart),
+            minimizeToTray: Boolean(appSettings.minimizeToTray),
+            startMinimized: Boolean(appSettings.startMinimized),
+            hotkey: appSettings.hotkey
+        }).catch((error) => console.error("Failed to apply behavior settings:", error));
+    }
 }
 
 function saveSettings() {
@@ -54,6 +62,14 @@ function saveSettings() {
         console.error("Failed to save settings:", error);
     }
     applySettings();
+    if (window.launcherAPI && window.launcherAPI.applyBehaviorSettings) {
+        window.launcherAPI.applyBehaviorSettings({
+            autoStart: Boolean(appSettings.autoStart),
+            minimizeToTray: Boolean(appSettings.minimizeToTray),
+            startMinimized: Boolean(appSettings.startMinimized),
+            hotkey: appSettings.hotkey
+        }).catch((error) => console.error("Failed to apply behavior settings:", error));
+    }
 }
 
 function applySettings() {
@@ -208,6 +224,37 @@ function exportBackupData() {
     showMessage("Backup Exported", "Aapka data aur settings JSON backup file me export ho chuki hain.");
 }
 
+function validateBackupData(data) {
+    if (!data || !Array.isArray(data.items) || !Array.isArray(data.categories)) return false;
+
+    const validTypes = new Set(["website", "webapp", "application"]);
+    const categoryIds = new Set(
+        data.categories
+            .filter((c) => c && (typeof c.id === "number" || typeof c.id === "string") && String(c.name || "").trim())
+            .map((c) => Number(c.id))
+    );
+
+    const ids = new Set();
+
+    return data.items.every((item) => {
+        if (!item || (typeof item.id !== "number" && typeof item.id !== "string")) return false;
+        if (ids.has(Number(item.id))) return false;
+        ids.add(Number(item.id));
+
+        if (!validTypes.has(item.type)) return false;
+        if (typeof item.name !== "string" || !item.name.trim()) return false;
+        if (typeof item.target !== "string" || !item.target.trim()) return false;
+
+        const isCopy = item.categoryId !== undefined && item.categoryId !== null;
+        if (isCopy) {
+            if (!categoryIds.has(Number(item.categoryId))) return false;
+            if (item.sourceItemId === undefined || item.sourceItemId === null) return false;
+        }
+
+        return true;
+    });
+}
+
 function handleImportBackup(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -216,27 +263,46 @@ function handleImportBackup(e) {
     reader.onload = async (event) => {
         try {
             const importedData = JSON.parse(event.target.result);
-            if (importedData && Array.isArray(importedData.items)) {
-                launcherItems = importedData.items;
-                launcherCategories = Array.isArray(importedData.categories)
-                    ? importedData.categories
-                    : [];
-                saveLauncherCategories();
 
-                if (importedData.settings) {
-                    appSettings = { ...appSettings, ...importedData.settings };
-                    saveSettings();
-                }
-                await saveLauncherItems(launcherItems);
-                renderItems();
-                showMessage("Restore Successful", "Items aur settings successfully restore ho chuki hain.");
-            } else {
-                showMessage("Invalid File", "Selected JSON file me valid launcher data mojood nahi hai.");
+            if (!validateBackupData(importedData)) {
+                showMessage("Invalid File", "Selected backup contains invalid launcher data.");
+                return;
             }
+
+            const oldItems = [...launcherItems];
+            const oldCategories = [...launcherCategories];
+            const oldSettings = { ...appSettings };
+
+            launcherItems = importedData.items;
+            launcherCategories = importedData.categories;
+
+            if (importedData.settings && typeof importedData.settings === "object") {
+                appSettings = { ...appSettings, ...importedData.settings };
+            }
+
+            const categoriesSaved = saveLauncherCategories();
+            const settingsBefore = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            saveSettings();
+            const itemsSaved = await saveLauncherItems(launcherItems);
+
+            if (!categoriesSaved || !itemsSaved) {
+                launcherItems = oldItems;
+                launcherCategories = oldCategories;
+                appSettings = oldSettings;
+                if (settingsBefore === null) localStorage.removeItem(SETTINGS_STORAGE_KEY);
+                else localStorage.setItem(SETTINGS_STORAGE_KEY, settingsBefore);
+                showMessage("Restore Failed", "The backup could not be fully saved.");
+                return;
+            }
+
+            refreshAllAddCategoryControls();
+            renderItems();
+            showMessage("Restore Successful", "Items aur settings successfully restore ho chuki hain.");
         } catch (err) {
             showMessage("Import Error", "Imported JSON file parse karne me fail ho gaya.");
+        } finally {
+            e.target.value = "";
         }
-        e.target.value = "";
     };
     reader.readAsText(file);
 }
@@ -424,7 +490,8 @@ function renderLauncherPicker() {
                 ...item,
                 id: Date.now(),
                 categoryId: pendingCategoryId,
-                sourceItemId: item.id
+                sourceItemId: item.id,
+                customName: false
             };
 
             launcherItems.push(copiedItem);
@@ -1031,12 +1098,23 @@ async function handleConfirmAction() {
     }
 
     if (action === "all") {
+        const oldItems = [...launcherItems];
+        const oldCategories = [...launcherCategories];
         launcherItems = [];
         launcherCategories = [];
         localStorage.removeItem(CATEGORIES_STORAGE_KEY);
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
-        await saveLauncherItems(launcherItems);
+        const categoriesSaved = saveLauncherCategories();
+        const saved = await saveLauncherItems(launcherItems);
+        if (!saved || !categoriesSaved) {
+            launcherItems = oldItems;
+            launcherCategories = oldCategories;
+            saveLauncherCategories();
+            await saveLauncherItems(launcherItems);
+            showMessage("Reset Failed", "The launcher data could not be reset because it could not be saved.");
+            return;
+        }
         applySettings();
         renderItems();
         showMessage("Reset Complete", "All launcher items and settings have been reset.");
@@ -1393,10 +1471,14 @@ function getWebsiteKey(url) {
         while (pathname.length > 1 && pathname.endsWith("/")) {
             pathname = pathname.slice(0, -1);
         }
-        return hostname + pathname + parsedUrl.search;
+        return parsedUrl.protocol.toLowerCase() + "//" + hostname + (parsedUrl.port ? ":" + parsedUrl.port : "") + pathname + parsedUrl.search;
     } catch {
         return null;
     }
+}
+
+function isCategoryCopy(item) {
+    return item && item.categoryId !== undefined && item.categoryId !== null;
 }
 
 function findDuplicateWebsite(url, ignoredItemId = null) {
@@ -1404,8 +1486,8 @@ function findDuplicateWebsite(url, ignoredItemId = null) {
     if (!newKey) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "website") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "website" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return getWebsiteKey(item.target) === newKey;
     }) || null;
 }
@@ -1415,8 +1497,8 @@ function findDuplicateWebApp(url, ignoredItemId = null) {
     if (!newKey) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "webapp") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "webapp" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return getWebsiteKey(item.target) === newKey;
     }) || null;
 }
@@ -1437,7 +1519,8 @@ function addItemToCategory(originalItem, categoryId) {
         ...originalItem,
         id: Date.now() + Math.floor(Math.random() * 100000),
         categoryId,
-        sourceItemId: originalItem.id
+        sourceItemId: originalItem.id,
+        customName: false
     });
 }
 
@@ -1495,10 +1578,7 @@ websiteForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    if (!websiteCheck.available) {
-        showMessage("Website Not Reachable", "This website could not be reached right now.");
-        return;
-    }
+
 
     const favicon = await window.launcherAPI.fetchFavicon(websiteCheck.url);
 
@@ -1512,6 +1592,7 @@ websiteForm.addEventListener("submit", async (event) => {
         item.target = websiteCheck.url;
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
@@ -1592,8 +1673,8 @@ webappForm.addEventListener("submit", async (event) => {
     saveWebappButton.disabled = false;
     saveWebappButton.textContent = editingItemId !== null ? "Update" : "Save";
 
-    if (!websiteCheck || !websiteCheck.valid || !websiteCheck.available) {
-        showMessage("Invalid Web App", "The web app address is not valid or reachable.");
+    if (!websiteCheck || !websiteCheck.valid) {
+        showMessage("Invalid Web App", "The web app address is not valid.");
         return;
     }
 
@@ -1609,6 +1690,7 @@ webappForm.addEventListener("submit", async (event) => {
         item.target = websiteCheck.url;
         item.favorite = favorite;
         if (favicon) item.favicon = favicon;
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
@@ -1654,10 +1736,26 @@ function findDuplicateApplication(applicationPath, ignoredItemId = null) {
     if (!newPath) return null;
 
     return launcherItems.find((item) => {
-        if (item.type !== "application") return false;
-        if (ignoredItemId !== null && item.id === ignoredItemId) return false;
+        if (item.type !== "application" || isCategoryCopy(item)) return false;
+        if (ignoredItemId !== null && Number(item.id) === Number(ignoredItemId)) return false;
         return normalizeApplicationPath(item.target) === newPath;
     }) || null;
+}
+
+function syncOriginalItemToCategoryCopies(item) {
+    if (!item || isCategoryCopy(item)) return;
+
+    launcherItems.forEach((copy) => {
+        if (Number(copy.sourceItemId) !== Number(item.id) || !isCategoryCopy(copy)) return;
+        if (!copy.customName) copy.name = item.name;
+        copy.type = item.type;
+        copy.target = item.target;
+        copy.favorite = Boolean(item.favorite);
+        copy.favicon = item.favicon || null;
+        if (item.type === "application") {
+            copy.missing = Boolean(item.missing);
+        }
+    });
 }
 
 browseApplicationButton.addEventListener("click", async () => {
@@ -1746,6 +1844,7 @@ applicationForm.addEventListener("submit", async (event) => {
         if (applicationIcon) {
             item.favicon = applicationIcon;
         }
+        syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
             id: Date.now(),
@@ -1836,37 +1935,48 @@ function createCard(item) {
         item.type === "application" &&
         item.missing === true;
 
-    let iconHtml = "▣";
-
-    if (isMissingApplication) {
-        iconHtml = "⚠";
-    } else if (item.favicon) {
-        iconHtml = `<img src="${item.favicon}" alt="icon" onerror="this.src=''; this.innerHTML='🌐';">`;
-    } else if (item.type === "website") {
-        iconHtml = "🌐";
-    } else if (item.type === "webapp") {
-        iconHtml = "◉";
-    } else if (item.type === "application") {
-        iconHtml = "▦";
-    }
-
-    const favoriteStar = item.favorite ? `<span class="card-favorite-star" title="Favorite">★</span>` : "";
-
     if (isMissingApplication) {
         card.classList.add("app-card-missing");
     }
 
-    const cardTypeLabel =
-        isMissingApplication
-            ? "Application Missing"
-            : item.type;
+    const icon = document.createElement("div");
+    icon.className = "card-icon";
 
-    card.innerHTML = `
-        <div class="card-icon">${iconHtml}</div>
-        ${favoriteStar}
-        <h4>${escapeHtml(item.name)}</h4>
-        <p>${escapeHtml(cardTypeLabel)}</p>
-    `;
+    if (isMissingApplication) {
+        icon.textContent = "⚠";
+    } else if (item.favicon) {
+        const image = document.createElement("img");
+        image.src = String(item.favicon);
+        image.alt = "";
+        image.addEventListener("error", () => {
+            image.remove();
+            icon.textContent = "🌐";
+        }, { once: true });
+        icon.appendChild(image);
+    } else {
+        icon.textContent =
+            item.type === "website" ? "🌐" :
+            item.type === "webapp" ? "◉" : "▦";
+    }
+
+    const cardTypeLabel = isMissingApplication ? "Application Missing" : item.type;
+    card.appendChild(icon);
+
+    if (item.favorite) {
+        const star = document.createElement("span");
+        star.className = "card-favorite-star";
+        star.title = "Favorite";
+        star.textContent = "★";
+        card.appendChild(star);
+    }
+
+    const title = document.createElement("h4");
+    title.textContent = String(item.name || "");
+    card.appendChild(title);
+
+    const type = document.createElement("p");
+    type.textContent = cardTypeLabel;
+    card.appendChild(type);
 
     card.addEventListener("click", () => openItem(item));
 
@@ -2200,12 +2310,15 @@ if (categoryItemNameForm) {
         }
 
         const oldName = item.name;
+        const oldCustomName = Boolean(item.customName);
         item.name = newName;
+        item.customName = true;
 
         const saved = await saveLauncherItems(launcherItems);
 
         if (!saved) {
             item.name = oldName;
+            item.customName = oldCustomName;
             showMessage(
                 "Save Failed",
                 "The category item name could not be updated."
@@ -2296,7 +2409,8 @@ async function syncItemCategories(item, selectedIds) {
                 ...item,
                 id: Date.now() + Math.floor(Math.random() * 1000000),
                 categoryId,
-                sourceItemId: item.id
+                sourceItemId: item.id,
+                customName: false
             });
         }
     });
@@ -2478,6 +2592,7 @@ contextMenu.addEventListener("click", async (event) => {
     } else if (action === "favorite") {
         const oldFavorite = Boolean(item.favorite);
         item.favorite = !oldFavorite;
+        if (!isCategoryCopy(item)) syncOriginalItemToCategoryCopies(item);
         const saved = await saveLauncherItems(launcherItems);
         if (!saved) {
             item.favorite = oldFavorite;
@@ -2599,7 +2714,12 @@ deleteConfirm.addEventListener("click", async () => {
     }
 
     if (!deleteTargetItem) return;
-    launcherItems = launcherItems.filter((entry) => entry.id !== deleteTargetItem.id);
+    const deletedId = Number(deleteTargetItem.id);
+    launcherItems = launcherItems.filter(
+        (entry) =>
+            Number(entry.id) !== deletedId &&
+            Number(entry.sourceItemId) !== deletedId
+    );
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Delete Failed", "The item could not be deleted.");
