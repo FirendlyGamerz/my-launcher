@@ -12,6 +12,8 @@ let contextMenuItem = null;
 let deleteTargetItem = null;
 
 let editingItemId = null;
+let submittingItemForm = false;
+const openingItems = new Set();
 let editingCategoryItemId = null;
 let pendingNewItemCategorySelect = null;
 let pendingNewCategoryType = null;
@@ -194,7 +196,7 @@ function initSettingsEvents() {
     const btnCheckUpdate = document.querySelector("#btn-check-update");
     if (btnCheckUpdate) {
         btnCheckUpdate.addEventListener("click", () => {
-            showMessage("Check for Updates", "Aap My Launcher ka latest version use kar rahe hain (v1.0.0).");
+            showMessage("Updates", "Automatic update checking is not configured yet. Please check the project releases manually.");
         });
     }
 }
@@ -376,7 +378,7 @@ function openCategoryNewFlow() {
     closeCategorySourceDialogDialog(true);
     openAddDialog();
     setAddCategoryModeVisible(false);
-    document.querySelector(".dialog-header h3").textContent =
+    addDialog.querySelector(".dialog-header h3").textContent =
         "Add Item to Category";
 }
 
@@ -902,6 +904,10 @@ function createCategory() {
     pendingNewCategorySelectedIds = [];
 
     renderCategories();
+
+    if (searchInput && searchInput.value.trim()) {
+        applySearch();
+    }
 }
 
 if (addCategoryButton) {
@@ -1092,7 +1098,7 @@ async function handleConfirmAction() {
     if (action === "settings") {
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
-        applySettings();
+        saveSettings();
         showMessage("Settings Reset", "Settings have been restored to their default values.");
         return;
     }
@@ -1342,7 +1348,7 @@ Object.entries(addCategoryControls).forEach(([type, controls]) => {
 
 function openAddDialog() {
     editingItemId = null;
-    document.querySelector(".dialog-header h3").textContent = "Add Item";
+    addDialog.querySelector(".dialog-header h3").textContent = "Add Item";
     saveWebsiteButton.textContent = "Save";
     saveWebappButton.textContent = "Save";
     saveApplicationButton.textContent = "Save";
@@ -1531,6 +1537,8 @@ function addItemToCategory(originalItem, categoryId) {
 
 websiteForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (submittingItemForm) return;
+    submittingItemForm = true;
 
     const name = document.querySelector("#website-name").value.trim();
     const rawUrl = document.querySelector("#website-url").value;
@@ -1538,12 +1546,14 @@ websiteForm.addEventListener("submit", async (event) => {
 
     if (!name) {
         showMessage("Name Required", "Please enter a name for this website.");
+        submittingItemForm = false;
         return;
     }
 
     const normalizedUrl = normalizeWebsiteUrl(rawUrl);
     if (!normalizedUrl) {
         showMessage("Invalid URL", "Please enter a valid website address, such as youtube.com.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1575,6 +1585,7 @@ websiteForm.addEventListener("submit", async (event) => {
 
     if (!websiteCheck || !websiteCheck.valid) {
         showMessage("Invalid URL", "The website address is not valid.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1591,7 +1602,7 @@ websiteForm.addEventListener("submit", async (event) => {
         item.name = name;
         item.target = websiteCheck.url;
         item.favorite = favorite;
-        if (favicon) item.favicon = favicon;
+        item.favicon = favicon || null;
         syncOriginalItemToCategoryCopies(item);
     } else {
         const originalItem = {
@@ -1617,9 +1628,11 @@ websiteForm.addEventListener("submit", async (event) => {
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Save Failed", "The website could not be saved.");
+        submittingItemForm = false;
         return;
     }
 
+    submittingItemForm = false;
     renderItems();
     closeAddDialog();
 });
@@ -1631,6 +1644,8 @@ websiteForm.addEventListener("submit", async (event) => {
 
 webappForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (submittingItemForm) return;
+    submittingItemForm = true;
 
     const name = document.querySelector("#webapp-name").value.trim();
     const rawUrl = document.querySelector("#webapp-url").value;
@@ -1638,12 +1653,14 @@ webappForm.addEventListener("submit", async (event) => {
 
     if (!name) {
         showMessage("Name Required", "Please enter a name for this web app.");
+        submittingItemForm = false;
         return;
     }
 
     const normalizedUrl = normalizeWebsiteUrl(rawUrl);
     if (!normalizedUrl) {
         showMessage("Invalid URL", "Please enter a valid website address.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1675,6 +1692,7 @@ webappForm.addEventListener("submit", async (event) => {
 
     if (!websiteCheck || !websiteCheck.valid) {
         showMessage("Invalid Web App", "The web app address is not valid.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1715,6 +1733,7 @@ webappForm.addEventListener("submit", async (event) => {
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Save Failed", "The web app could not be saved.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1775,6 +1794,9 @@ browseApplicationButton.addEventListener("click", async () => {
 
 applicationForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (submittingItemForm) return;
+
+    submittingItemForm = true;
 
     const name = document.querySelector("#application-name").value.trim();
     const applicationPath = document.querySelector("#application-path").value.trim();
@@ -1782,6 +1804,7 @@ applicationForm.addEventListener("submit", async (event) => {
 
     if (!name || !applicationPath) {
         showMessage("Fields Required", "Please enter a name and select an executable file.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1800,6 +1823,7 @@ applicationForm.addEventListener("submit", async (event) => {
 
     if (!applicationCheck || !applicationCheck.valid || !applicationCheck.exists) {
         showMessage("Invalid Application", "Please select a valid Windows executable (.exe) file.");
+        submittingItemForm = false;
         return;
     }
 
@@ -1869,6 +1893,7 @@ applicationForm.addEventListener("submit", async (event) => {
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
         showMessage("Save Failed", "The application could not be saved.");
+        submittingItemForm = false;
         return;
     }
 
@@ -2021,6 +2046,11 @@ function escapeHtml(value) {
 ================================= */
 
 async function openItem(item) {
+    const openKey = String(item.id);
+    if (openingItems.has(openKey)) return;
+    openingItems.add(openKey);
+
+    try {
     if (item.type === "website") {
         const opened = await window.launcherAPI.openWebsite(item.target);
         if (!opened) {
@@ -2088,6 +2118,9 @@ async function openItem(item) {
         }
 
         return;
+    }
+    } finally {
+        openingItems.delete(openKey);
     }
 }
 
@@ -2556,10 +2589,17 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-        closeContextMenu();
-        closeDeleteDialog();
-    }
+    if (event.key !== "Escape") return;
+    closeContextMenu();
+    closeDeleteDialog();
+    closeConfirmDialog();
+    closeAddDialog();
+    closeCategoryDialogDialog();
+    closeCategorySourceDialogDialog();
+    closeLauncherPickerDialog();
+    if (messageDialog) messageDialog.style.display = "none";
+    if (itemCategoriesDialog) itemCategoriesDialog.style.display = "none";
+    if (categoryItemNameDialog) categoryItemNameDialog.style.display = "none";
 });
 
 contextMenu.addEventListener("click", async (event) => {
@@ -2634,21 +2674,21 @@ function editItem(item) {
         document.querySelector("#website-name").value = item.name;
         document.querySelector("#website-url").value = item.target;
         document.querySelector("#website-favorite").checked = Boolean(item.favorite);
-        document.querySelector(".dialog-header h3").textContent = "Edit Website";
+        addDialog.querySelector(".dialog-header h3").textContent = "Edit Website";
         saveWebsiteButton.textContent = "Update";
     } else if (item.type === "webapp") {
         webappForm.style.display = "block";
         document.querySelector("#webapp-name").value = item.name;
         document.querySelector("#webapp-url").value = item.target;
         document.querySelector("#webapp-favorite").checked = Boolean(item.favorite);
-        document.querySelector(".dialog-header h3").textContent = "Edit Web App";
+        addDialog.querySelector(".dialog-header h3").textContent = "Edit Web App";
         saveWebappButton.textContent = "Update";
     } else if (item.type === "application") {
         applicationForm.style.display = "block";
         document.querySelector("#application-name").value = item.name;
         document.querySelector("#application-path").value = item.target;
         document.querySelector("#application-favorite").checked = Boolean(item.favorite);
-        document.querySelector(".dialog-header h3").textContent = "Edit Windows Application";
+        addDialog.querySelector(".dialog-header h3").textContent = "Edit Windows Application";
         saveApplicationButton.textContent = "Update";
     }
 
@@ -2714,6 +2754,7 @@ deleteConfirm.addEventListener("click", async () => {
     }
 
     if (!deleteTargetItem) return;
+    const oldItems = [...launcherItems];
     const deletedId = Number(deleteTargetItem.id);
     launcherItems = launcherItems.filter(
         (entry) =>
@@ -2722,6 +2763,7 @@ deleteConfirm.addEventListener("click", async () => {
     );
     const saved = await saveLauncherItems(launcherItems);
     if (!saved) {
+        launcherItems = oldItems;
         showMessage("Delete Failed", "The item could not be deleted.");
         return;
     }
