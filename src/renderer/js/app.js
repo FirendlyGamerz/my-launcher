@@ -1142,7 +1142,8 @@ function createCategoryCard(category) {
     addLauncherButton.type = "button";
     addLauncherButton.className = "category-launcher-button";
     addLauncherButton.textContent = "+ Add Launcher";
-    addLauncherButton.addEventListener("click", () => {
+    addLauncherButton.addEventListener("click", (event) => {
+        event.stopPropagation();
         pendingCategoryId = category.id;
         openCategorySourceDialog();
     });
