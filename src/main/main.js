@@ -65,6 +65,7 @@ if (!fs.existsSync(imagesDir)) {
 }
 
 const webAppWindows = new Map();
+let dataLoadBlocked = false;
 
 let mainWindow = null;
 let tray = null;
@@ -247,6 +248,7 @@ ipcMain.handle('load-launcher-data', () => {
             console.error('Failed to preserve corrupt launcher data:', backupError);
         }
 
+        dataLoadBlocked = true;
         return [];
     }
 
@@ -255,14 +257,20 @@ ipcMain.handle('load-launcher-data', () => {
 
 ipcMain.handle(
     'save-launcher-data',
-    (event, items) => {
+    (event, items, options = {}) => {
 
         try {
+
+            if (dataLoadBlocked && !options.force) {
+                console.error('Refusing to overwrite launcher data after a corruption was detected.');
+                return false;
+            }
 
             const serialized = JSON.stringify(items, null, 4);
         const tempFile = dataFile + '.tmp';
         fs.writeFileSync(tempFile, serialized, 'utf8');
         fs.renameSync(tempFile, dataFile);
+        dataLoadBlocked = false;
 
         return true;
 
