@@ -215,6 +215,68 @@ ipcMain.handle('apply-behavior-settings', (event, settings) => {
     return true;
 });
 
+ipcMain.handle('check-for-updates', async () => {
+    const currentVersion = app.getVersion();
+
+    return await new Promise((resolve) => {
+        const request = https.get(
+            'https://api.github.com/repos/FirendlyGamerz/my-launcher/releases/latest',
+            {
+                headers: {
+                    'User-Agent': 'My-Launcher',
+                    'Accept': 'application/vnd.github+json'
+                },
+                timeout: 5000
+            },
+            (response) => {
+                let body = '';
+                response.setEncoding('utf8');
+                response.on('data', (chunk) => { body += chunk; });
+                response.on('end', () => {
+                    if (response.statusCode !== 200) {
+                        resolve({
+                            success: false,
+                            message: response.statusCode === 404
+                                ? 'No GitHub release has been published yet.'
+                                : 'GitHub could not be reached right now.'
+                        });
+                        return;
+                    }
+
+                    try {
+                        const release = JSON.parse(body);
+                        const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
+                        const current = currentVersion.split('.').map(Number);
+                        const latest = latestVersion.split('.').map(Number);
+                        const updateAvailable =
+                            latest.length >= 2 &&
+                            latest.some((value, index) => Number(value || 0) > Number(current[index] || 0));
+
+                        resolve({
+                            success: true,
+                            currentVersion,
+                            latestVersion,
+                            updateAvailable,
+                            url: release.html_url || null
+                        });
+                    } catch {
+                        resolve({ success: false, message: 'GitHub returned invalid release data.' });
+                    }
+                });
+            }
+        );
+
+        request.on('timeout', () => {
+            request.destroy();
+            resolve({ success: false, message: 'Update check timed out.' });
+        });
+
+        request.on('error', () => {
+            resolve({ success: false, message: 'Could not connect to GitHub.' });
+        });
+    });
+});
+
 ipcMain.handle('load-launcher-data', () => {
 
     try {
