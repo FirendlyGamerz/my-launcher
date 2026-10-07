@@ -350,7 +350,6 @@ function createCategoryCard(category) {
     });
 
     sectionHeader.appendChild(titleWrap);
-    sectionHeader.appendChild(addLauncherButton);
 
     const grid = document.createElement("div");
     grid.className = "app-grid category-item-grid";
@@ -390,6 +389,7 @@ function createCategoryCard(category) {
 
     card.appendChild(sectionHeader);
     card.appendChild(grid);
+    card.appendChild(addLauncherButton);
 
     return card;
 }
