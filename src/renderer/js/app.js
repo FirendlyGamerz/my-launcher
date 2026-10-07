@@ -215,13 +215,15 @@ function exportBackupData() {
         items: launcherItems
     };
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
+    const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
+    const dataUrl = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("href", dataUrl);
     downloadAnchor.setAttribute("download", `mylauncher_backup_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    URL.revokeObjectURL(dataUrl);
 
     showMessage("Backup Exported", "Aapka data aur settings JSON backup file me export ho chuki hain.");
 }
@@ -275,11 +277,39 @@ function handleImportBackup(e) {
             const oldCategories = [...launcherCategories];
             const oldSettings = { ...appSettings };
 
-            launcherItems = importedData.items;
-            launcherCategories = importedData.categories;
+            const normalizedCategories = importedData.categories.map((category) => ({
+                ...category,
+                id: Number(category.id),
+                name: String(category.name).trim()
+            }));
+
+            launcherCategories = normalizedCategories;
+            launcherItems = importedData.items.map((item) => ({
+                ...item,
+                id: Number(item.id),
+                categoryId: item.categoryId === undefined || item.categoryId === null ? undefined : Number(item.categoryId),
+                sourceItemId: item.sourceItemId === undefined || item.sourceItemId === null ? undefined : Number(item.sourceItemId),
+                favorite: Boolean(item.favorite),
+                missing: Boolean(item.missing),
+                favicon: typeof item.favicon === "string" ? item.favicon : null
+            }));
 
             if (importedData.settings && typeof importedData.settings === "object") {
-                appSettings = { ...appSettings, ...importedData.settings };
+                const allowedThemes = new Set(["dark", "light", "system"]);
+                const allowedDensity = new Set(["comfortable", "compact"]);
+                const allowedHotkeys = new Set(["Alt+Space", "Ctrl+Shift+L", "Ctrl+Space", "disabled"]);
+                const importedSettings = importedData.settings;
+
+                appSettings = {
+                    ...appSettings,
+                    theme: allowedThemes.has(importedSettings.theme) ? importedSettings.theme : appSettings.theme,
+                    density: allowedDensity.has(importedSettings.density) ? importedSettings.density : appSettings.density,
+                    accentColor: typeof importedSettings.accentColor === "string" ? importedSettings.accentColor : appSettings.accentColor,
+                    autoStart: Boolean(importedSettings.autoStart),
+                    minimizeToTray: Boolean(importedSettings.minimizeToTray),
+                    startMinimized: Boolean(importedSettings.startMinimized),
+                    hotkey: allowedHotkeys.has(importedSettings.hotkey) ? importedSettings.hotkey : appSettings.hotkey
+                };
             }
 
             const categoriesSaved = saveLauncherCategories();
@@ -2257,20 +2287,31 @@ async function repairApplication(item) {
         );
     }
 
-    const oldPath = item.target;
-    const oldIcon = item.favicon || null;
-    const oldMissing = item.missing === true;
+    const targets = isCategoryCopy(item)
+        ? launcherItems.filter((entry) => Number(entry.id) === Number(item.sourceItemId) || Number(entry.sourceItemId) === Number(item.sourceItemId))
+        : [item];
 
-    item.target = newPath;
-    item.missing = false;
-    item.favicon = applicationIcon || null;
+    const oldStates = targets.map((entry) => ({
+        entry,
+        target: entry.target,
+        favicon: entry.favicon || null,
+        missing: entry.missing === true
+    }));
+
+    targets.forEach((entry) => {
+        entry.target = newPath;
+        entry.missing = false;
+        entry.favicon = applicationIcon || null;
+    });
 
     const saved = await saveLauncherItems(launcherItems);
 
     if (!saved) {
-        item.target = oldPath;
-        item.favicon = oldIcon;
-        item.missing = oldMissing;
+        oldStates.forEach((state) => {
+            state.entry.target = state.target;
+            state.entry.favicon = state.favicon;
+            state.entry.missing = state.missing;
+        });
 
         showMessage(
             "Repair Failed",
@@ -2528,9 +2569,7 @@ function openContextMenu(item, x, y) {
 
     if (contextRepair) {
         contextRepair.style.display =
-            !isCategoryItem &&
-            item.type === "application" &&
-            item.missing
+            item.type === "application" && item.missing
                 ? "flex"
                 : "none";
     }
