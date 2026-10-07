@@ -352,6 +352,26 @@ body {
    App Cards
 ================================= */
 
+.search-empty-state {
+    grid-column: 1 / -1;
+    padding: 48px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.search-empty-state h3 {
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.search-empty-state p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
 .app-card {
     min-height: var(--card-min-height);
 
