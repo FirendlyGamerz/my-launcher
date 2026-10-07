@@ -4,7 +4,11 @@ const {
     ipcMain,
     shell,
     clipboard,
-    dialog
+    dialog,
+    Tray,
+    Menu,
+    nativeImage,
+    globalShortcut
 } = require('electron');
 
 const fs = require('fs');
@@ -33,6 +37,88 @@ if (!fs.existsSync(imagesDir)) {
 }
 
 const webAppWindows = new Map();
+
+let mainWindow = null;
+let tray = null;
+let trayEnabled = false;
+let startMinimized = false;
+let registeredHotkey = null;
+
+function registerGlobalHotkey(accelerator) {
+    if (registeredHotkey) {
+        globalShortcut.unregister(registeredHotkey);
+        registeredHotkey = null;
+    }
+
+    if (!accelerator) return;
+
+    try {
+        if (globalShortcut.register(accelerator, () => {
+            if (!mainWindow || mainWindow.isDestroyed()) return;
+            if (mainWindow.isMinimized() || !mainWindow.isVisible()) {
+                mainWindow.show();
+            }
+            mainWindow.focus();
+        })) {
+            registeredHotkey = accelerator;
+        }
+    } catch (error) {
+        console.error('Failed to register global hotkey:', error);
+    }
+}
+
+function createTray() {
+    if (tray || !trayEnabled) return;
+
+    tray = new Tray(nativeImage.createEmpty());
+    tray.setToolTip('My Launcher');
+    tray.setContextMenu(Menu.buildFromTemplate([
+        {
+            label: 'Open My Launcher',
+            click: () => {
+                if (!mainWindow || mainWindow.isDestroyed()) return;
+                mainWindow.show();
+                mainWindow.focus();
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Exit',
+            click: () => {
+                app.isQuitting = true;
+                if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+                app.quit();
+            }
+        }
+    ]));
+}
+
+function destroyTray() {
+    if (tray) {
+        tray.destroy();
+        tray = null;
+    }
+}
+
+function applyBehaviorSettings(settings = {}) {
+    if (typeof settings.autoStart === 'boolean') {
+        app.setLoginItemSettings({ openAtLogin: settings.autoStart });
+    }
+
+    if (typeof settings.minimizeToTray === 'boolean') {
+        trayEnabled = settings.minimizeToTray;
+        if (trayEnabled) createTray();
+        else destroyTray();
+    }
+
+    if (typeof settings.startMinimized === 'boolean') {
+        startMinimized = settings.startMinimized;
+    }
+
+    if (typeof settings.hotkey === 'string') {
+        registerGlobalHotkey(settings.hotkey);
+    }
+}
 
 
 function createWindow() {
@@ -63,12 +149,33 @@ function createWindow() {
     });
 
 
+    mainWindow = window;
+
+    window.on('close', (event) => {
+        if (trayEnabled && !app.isQuitting) {
+            event.preventDefault();
+            window.hide();
+        }
+    });
+
+    window.on('closed', () => {
+        mainWindow = null;
+    });
+
     window.loadFile(
         'src/renderer/index.html'
     );
 
+    if (startMinimized) {
+        window.once('ready-to-show', () => window.hide());
+    }
 }
 
+
+ipcMain.handle('apply-behavior-settings', (event, settings) => {
+    applyBehaviorSettings(settings || {});
+    return true;
+});
 
 ipcMain.handle('load-launcher-data', () => {
 
@@ -92,14 +199,18 @@ ipcMain.handle('load-launcher-data', () => {
     }
 
     catch (error) {
+        console.error('Failed to load launcher data:', error);
 
-        console.error(
-            'Failed to load launcher data:',
-            error
-        );
+        try {
+            if (fs.existsSync(dataFile)) {
+                const corruptFile = dataFile + '.corrupt-' + Date.now();
+                fs.copyFileSync(dataFile, corruptFile);
+            }
+        } catch (backupError) {
+            console.error('Failed to preserve corrupt launcher data:', backupError);
+        }
 
         return [];
-
     }
 
 });
@@ -111,22 +222,12 @@ ipcMain.handle(
 
         try {
 
-            fs.writeFileSync(
+            const serialized = JSON.stringify(items, null, 4);
+        const tempFile = dataFile + '.tmp';
+        fs.writeFileSync(tempFile, serialized, 'utf8');
+        fs.renameSync(tempFile, dataFile);
 
-                dataFile,
-
-                JSON.stringify(
-                    items,
-                    null,
-                    4
-                ),
-
-                'utf8'
-
-            );
-
-
-            return true;
+        return true;
 
         }
 
@@ -985,7 +1086,13 @@ ipcMain.handle(
 
 
 app.whenReady().then(() => {
-
     createWindow();
+});
 
+app.on('will-quit', () => {
+    if (registeredHotkey) {
+        globalShortcut.unregister(registeredHotkey);
+        registeredHotkey = null;
+    }
+    destroyTray();
 });
