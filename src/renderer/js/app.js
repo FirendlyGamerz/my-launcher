@@ -716,7 +716,7 @@ function editCategory(category) {
 
 function deleteCategory(category) {
     const categoryItems = launcherItems.filter(
-        (item) => item.categoryId === category.id
+        (item) => Number(item.categoryId) === Number(category.id)
     );
 
     if (categoryItems.length === 0) {
@@ -757,7 +757,7 @@ function createCategory() {
 
     const duplicate = launcherCategories.some(
         (category) =>
-            category.id !== editingCategoryId &&
+            Number(category.id) !== Number(editingCategoryId) &&
             String(category.name || "").trim().toLowerCase() === name.toLowerCase()
     );
 
@@ -768,7 +768,7 @@ function createCategory() {
 
     if (editingCategoryId !== null) {
         const category = launcherCategories.find(
-            (entry) => entry.id === editingCategoryId
+            (entry) => Number(entry.id) === Number(editingCategoryId)
         );
 
         if (!category) {
@@ -2184,7 +2184,7 @@ if (categoryItemNameForm) {
         if (editingCategoryItemId === null) return;
 
         const item = launcherItems.find(
-            (entry) => entry.id === editingCategoryItemId
+            (entry) => Number(entry.id) === Number(editingCategoryItemId)
         );
 
         if (!item || item.categoryId === undefined || item.categoryId === null) {
