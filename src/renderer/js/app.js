@@ -1,5 +1,10 @@
 let launcherItems = [];
 
+let launcherCategories = [];
+let pendingCategoryId = null;
+
+const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
+
 let contextMenuItem = null;
 
 let deleteTargetItem = null;
@@ -181,6 +186,7 @@ function exportBackupData() {
         version: "1.0.0",
         exportDate: new Date().toISOString(),
         settings: appSettings,
+        categories: launcherCategories,
         items: launcherItems
     };
 
@@ -205,6 +211,11 @@ function handleImportBackup(e) {
             const importedData = JSON.parse(event.target.result);
             if (importedData && Array.isArray(importedData.items)) {
                 launcherItems = importedData.items;
+                launcherCategories = Array.isArray(importedData.categories)
+                    ? importedData.categories
+                    : [];
+                saveLauncherCategories();
+
                 if (importedData.settings) {
                     appSettings = { ...appSettings, ...importedData.settings };
                     saveSettings();
@@ -247,11 +258,222 @@ const pageSections = {
     websites: document.querySelector("#websites-section"),
     webapps: document.querySelector("#webapps-section"),
     applications: document.querySelector("#applications-section"),
-    settings: document.querySelector("#settings-section")
+    settings: document.querySelector("#settings-section"),
+    categories: document.querySelector("#categories-section")
 };
 
 const homeGrid = document.querySelector("#home-grid");
 const homeEmptyState = document.querySelector("#home-empty-state");
+
+const categoriesGrid = document.querySelector("#categories-grid");
+const categoriesEmptyState = document.querySelector("#categories-empty-state");
+const addCategoryButton = document.querySelector("#add-category-button");
+const addCategoryEmptyButton = document.querySelector("#add-category-empty-button");
+const categoryDialog = document.querySelector("#category-dialog");
+const closeCategoryDialog = document.querySelector("#close-category-dialog");
+const cancelCategoryButton = document.querySelector("#cancel-category");
+const categoryForm = document.querySelector("#category-form");
+const categoryNameInput = document.querySelector("#category-name");
+
+
+function loadLauncherCategories() {
+    try {
+        const saved = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+        launcherCategories = saved ? JSON.parse(saved) : [];
+
+        if (!Array.isArray(launcherCategories)) {
+            launcherCategories = [];
+        }
+    } catch (error) {
+        console.error("Failed to load launcher categories:", error);
+        launcherCategories = [];
+    }
+}
+
+function saveLauncherCategories() {
+    try {
+        localStorage.setItem(
+            CATEGORIES_STORAGE_KEY,
+            JSON.stringify(launcherCategories)
+        );
+        return true;
+    } catch (error) {
+        console.error("Failed to save launcher categories:", error);
+        return false;
+    }
+}
+
+function openCategoryDialog() {
+    categoryForm.reset();
+    categoryDialog.style.display = "flex";
+    categoryNameInput.focus();
+}
+
+function closeCategoryDialogDialog() {
+    categoryDialog.style.display = "none";
+    categoryForm.reset();
+}
+
+function createCategoryCard(category) {
+    const card = document.createElement("section");
+    card.className = "category-card";
+
+    const categoryItems = launcherItems.filter(
+        (item) => item.categoryId === category.id
+    );
+
+    const sectionHeader = document.createElement("div");
+    sectionHeader.className = "category-card-header";
+
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "category-card-title";
+
+    const title = document.createElement("h3");
+    title.textContent = category.name;
+
+    const count = document.createElement("span");
+    count.className = "category-count";
+    count.textContent = String(categoryItems.length);
+
+    titleWrap.appendChild(title);
+    titleWrap.appendChild(count);
+
+    const addLauncherButton = document.createElement("button");
+    addLauncherButton.type = "button";
+    addLauncherButton.className = "category-launcher-button";
+    addLauncherButton.textContent = "+ Add Launcher";
+    addLauncherButton.addEventListener("click", () => {
+        pendingCategoryId = category.id;
+        openAddDialog();
+        document.querySelector(".dialog-header h3").textContent =
+            "Add Item to " + category.name;
+    });
+
+    sectionHeader.appendChild(titleWrap);
+    sectionHeader.appendChild(addLauncherButton);
+
+    const grid = document.createElement("div");
+    grid.className = "app-grid category-item-grid";
+
+    if (categoryItems.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "category-item-empty";
+        empty.innerHTML =
+            "<h4>No launchers in this category yet</h4><p>Use + Add Launcher to add an item here.</p>";
+        grid.appendChild(empty);
+    } else {
+        const sortMode = sortSelect ? sortSelect.value : "default";
+        const sortedCategoryItems = [...categoryItems];
+
+        if (sortMode === "name-az") {
+            sortedCategoryItems.sort((a, b) =>
+                String(a.name || "").localeCompare(
+                    String(b.name || ""),
+                    undefined,
+                    { sensitivity: "base" }
+                )
+            );
+        } else if (sortMode === "name-za") {
+            sortedCategoryItems.sort((a, b) =>
+                String(b.name || "").localeCompare(
+                    String(a.name || ""),
+                    undefined,
+                    { sensitivity: "base" }
+                )
+            );
+        }
+
+        sortedCategoryItems.forEach((item) => {
+            grid.appendChild(createCard(item));
+        });
+    }
+
+    card.appendChild(sectionHeader);
+    card.appendChild(grid);
+
+    return card;
+}
+
+function renderCategories() {
+    if (!categoriesGrid || !categoriesEmptyState) {
+        return;
+    }
+
+    categoriesGrid.innerHTML = "";
+
+    const hasCategories = launcherCategories.length > 0;
+
+    categoriesEmptyState.style.display = hasCategories ? "none" : "flex";
+    addCategoryButton.style.display = hasCategories ? "inline-flex" : "none";
+
+    launcherCategories.forEach((category) => {
+        categoriesGrid.appendChild(createCategoryCard(category));
+    });
+}
+
+function createCategory() {
+    const name = categoryNameInput.value.trim();
+
+    if (!name) {
+        showMessage("Name Required", "Please enter a name for the category.");
+        return;
+    }
+
+    const duplicate = launcherCategories.some(
+        (category) =>
+            String(category.name || "").trim().toLowerCase() === name.toLowerCase()
+    );
+
+    if (duplicate) {
+        showMessage("Already Exists", '"' + name + '" is already an existing category.');
+        return;
+    }
+
+    launcherCategories.push({
+        id: Date.now(),
+        name
+    });
+
+    if (!saveLauncherCategories()) {
+        launcherCategories.pop();
+        showMessage("Save Failed", "The category could not be saved.");
+        return;
+    }
+
+    closeCategoryDialogDialog();
+    renderCategories();
+}
+
+if (addCategoryButton) {
+    addCategoryButton.addEventListener("click", openCategoryDialog);
+}
+
+if (addCategoryEmptyButton) {
+    addCategoryEmptyButton.addEventListener("click", openCategoryDialog);
+}
+
+if (closeCategoryDialog) {
+    closeCategoryDialog.addEventListener("click", closeCategoryDialogDialog);
+}
+
+if (cancelCategoryButton) {
+    cancelCategoryButton.addEventListener("click", closeCategoryDialogDialog);
+}
+
+if (categoryDialog) {
+    categoryDialog.addEventListener("click", (event) => {
+        if (event.target === categoryDialog) {
+            closeCategoryDialogDialog();
+        }
+    });
+}
+
+if (categoryForm) {
+    categoryForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        createCategory();
+    });
+}
 
 const categoryGrids = {
     favoritesWebsites: document.querySelector("#favorites-websites-grid"),
@@ -387,6 +609,8 @@ async function handleConfirmAction() {
 
     if (action === "all") {
         launcherItems = [];
+        launcherCategories = [];
+        localStorage.removeItem(CATEGORIES_STORAGE_KEY);
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
         await saveLauncherItems(launcherItems);
@@ -1114,6 +1338,7 @@ function renderItems() {
     });
 
     homeEmptyState.style.display = launcherItems.length === 0 ? "flex" : "none";
+    renderCategories();
 }
 
 
@@ -1516,6 +1741,8 @@ async function loadMissingApplicationIcons() {
 async function initializeLauncher() {
     loadSettings();
     initSettingsEvents();
+
+    loadLauncherCategories();
 
     launcherItems = await loadLauncherItems();
 
