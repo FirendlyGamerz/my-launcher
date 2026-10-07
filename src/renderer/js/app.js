@@ -195,8 +195,24 @@ function initSettingsEvents() {
 
     const btnCheckUpdate = document.querySelector("#btn-check-update");
     if (btnCheckUpdate) {
-        btnCheckUpdate.addEventListener("click", () => {
-            showMessage("Updates", "Automatic update checking is not configured yet. Please check the project releases manually.");
+        btnCheckUpdate.addEventListener("click", async () => {
+            btnCheckUpdate.disabled = true;
+            btnCheckUpdate.textContent = "Checking...";
+            try {
+                const result = await window.launcherAPI.checkForUpdates();
+                if (!result || !result.success) {
+                    showMessage("Update Check Failed", result?.message || "Could not check GitHub releases.");
+                } else if (result.updateAvailable) {
+                    showMessage("Update Available", `Version ${result.latestVersion} is available.`);
+                } else {
+                    showMessage("No Updates", `You are using the latest release (${result.currentVersion}).`);
+                }
+            } catch {
+                showMessage("Update Check Failed", "Could not check GitHub releases.");
+            } finally {
+                btnCheckUpdate.disabled = false;
+                btnCheckUpdate.textContent = "Check Now";
+            }
         });
     }
 }
@@ -315,7 +331,7 @@ function handleImportBackup(e) {
             const categoriesSaved = saveLauncherCategories();
             const settingsBefore = localStorage.getItem(SETTINGS_STORAGE_KEY);
             saveSettings();
-            const itemsSaved = await saveLauncherItems(launcherItems);
+            const itemsSaved = await saveLauncherItems(launcherItems, { force: true });
 
             if (!categoriesSaved || !itemsSaved) {
                 launcherItems = oldItems;
@@ -1142,12 +1158,12 @@ async function handleConfirmAction() {
         appSettings = getDefaultSettings();
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
         const categoriesSaved = saveLauncherCategories();
-        const saved = await saveLauncherItems(launcherItems);
+        const saved = await saveLauncherItems(launcherItems, { force: true });
         if (!saved || !categoriesSaved) {
             launcherItems = oldItems;
             launcherCategories = oldCategories;
             saveLauncherCategories();
-            await saveLauncherItems(launcherItems);
+            await saveLauncherItems(launcherItems, { force: true });
             showMessage("Reset Failed", "The launcher data could not be reset because it could not be saved.");
             return;
         }
