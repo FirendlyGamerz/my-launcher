@@ -720,18 +720,25 @@ function deleteCategory(category) {
     );
 
     if (categoryItems.length === 0) {
+        closeDeleteDialog();
+
+        const oldCategories = [...launcherCategories];
         launcherCategories = launcherCategories.filter(
-            (entry) => entry.id !== category.id
+            (entry) => Number(entry.id) !== Number(category.id)
         );
+
         if (!saveLauncherCategories()) {
+            launcherCategories = oldCategories;
             showMessage("Delete Failed", "The category could not be deleted.");
             return;
         }
+
         refreshAllAddCategoryControls();
         renderCategories();
         return;
     }
 
+    closeDeleteDialog();
     deleteTargetCategory = category;
     deleteTargetItem = null;
     deleteTitle.textContent = "Delete Category?";
@@ -1861,14 +1868,27 @@ function createCard(item) {
     `;
 
     card.addEventListener("click", () => openItem(item));
-    card.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        openContextMenu(item, event.clientX, event.clientY);
-    });
 
     return card;
 }
+
+
+/* ==============================
+   Context Menu Delegation
+================================= */
+
+document.addEventListener("contextmenu", (event) => {
+    const card = event.target.closest(".app-card");
+    if (!card) return;
+
+    const itemId = Number(card.dataset.itemId);
+    const item = launcherItems.find((entry) => Number(entry.id) === itemId);
+    if (!item) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    openContextMenu(item, event.clientX, event.clientY);
+}, true);
 
 
 /* ==============================
@@ -2562,6 +2582,7 @@ deleteConfirm.addEventListener("click", async () => {
         closeDeleteDialog();
         refreshAllAddCategoryControls();
         renderItems();
+        renderCategories();
         return;
     }
 
