@@ -1493,7 +1493,9 @@ function normalizeWebsiteUrl(input) {
     if (!value) return null;
 
     if (!/^https?:\/\//i.test(value)) {
-        value = `https://${value}`;
+        const localHost = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\\d+)?(?:\/|$)/i.test(value);
+        const privateHost = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(value);
+        value = `${localHost || privateHost ? "http" : "https"}://${value}`;
     }
 
     try {
