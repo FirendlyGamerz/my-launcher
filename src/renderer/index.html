@@ -171,7 +171,12 @@
                     <div class="dashboard-header home-header">
 
                         <div>
-                            <h2>Home</h2>
+                            <div class="selection-heading">
+                                <input type="checkbox" class="selection-master-checkbox" data-selection-scope="home"
+                                    aria-label="Select all Home launchers">
+                                <h2>Home</h2>
+                                <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                            </div>
 
                             <p>Your launcher dashboard</p>
                         </div>
@@ -206,7 +211,12 @@
 
                     <div class="dashboard-header">
 
-                        <h2>Favorites</h2>
+                        <div class="selection-heading">
+                            <input type="checkbox" class="selection-master-checkbox" data-selection-scope="favorites"
+                                aria-label="Select all favorite launchers">
+                            <h2>Favorites</h2>
+                            <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                        </div>
 
                         <p>Your favorite launcher items</p>
 
@@ -217,9 +227,14 @@
 
                     <section class="launcher-section">
 
-                        <div class="section-header">
+                        <div class="section-header selection-section-header">
 
-                            <h3>Websites</h3>
+                            <div class="selection-heading">
+                                <input type="checkbox" class="selection-master-checkbox"
+                                    data-selection-scope="favorites-websites"
+                                    aria-label="Select all favorite websites">
+                                <h3>Websites</h3>
+                            </div>
 
                         </div>
 
@@ -232,9 +247,14 @@
 
                     <section class="launcher-section">
 
-                        <div class="section-header">
+                        <div class="section-header selection-section-header">
 
-                            <h3>Web Apps</h3>
+                            <div class="selection-heading">
+                                <input type="checkbox" class="selection-master-checkbox"
+                                    data-selection-scope="favorites-webapps"
+                                    aria-label="Select all favorite web apps">
+                                <h3>Web Apps</h3>
+                            </div>
 
                         </div>
 
@@ -247,9 +267,14 @@
 
                     <section class="launcher-section">
 
-                        <div class="section-header">
+                        <div class="section-header selection-section-header">
 
-                            <h3>Windows Applications</h3>
+                            <div class="selection-heading">
+                                <input type="checkbox" class="selection-master-checkbox"
+                                    data-selection-scope="favorites-applications"
+                                    aria-label="Select all favorite applications">
+                                <h3>Windows Applications</h3>
+                            </div>
 
                         </div>
 
@@ -270,7 +295,12 @@
 
                     <div class="dashboard-header">
 
-                        <h2>Websites</h2>
+                        <div class="selection-heading">
+                            <input type="checkbox" class="selection-master-checkbox" data-selection-scope="websites"
+                                aria-label="Select all websites">
+                            <h2>Websites</h2>
+                            <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                        </div>
 
                         <p>Your saved websites</p>
 
@@ -291,7 +321,12 @@
 
                     <div class="dashboard-header">
 
-                        <h2>Web Apps</h2>
+                        <div class="selection-heading">
+                            <input type="checkbox" class="selection-master-checkbox" data-selection-scope="webapps"
+                                aria-label="Select all web apps">
+                            <h2>Web Apps</h2>
+                            <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                        </div>
 
                         <p>Your installed web apps</p>
 
@@ -312,7 +347,12 @@
 
                     <div class="dashboard-header">
 
-                        <h2>Applications</h2>
+                        <div class="selection-heading">
+                            <input type="checkbox" class="selection-master-checkbox" data-selection-scope="applications"
+                                aria-label="Select all applications">
+                            <h2>Applications</h2>
+                            <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                        </div>
 
                         <p>Your Windows applications</p>
 
@@ -334,7 +374,12 @@
                     <div class="dashboard-header categories-header">
 
                         <div>
-                            <h2>Categories</h2>
+                            <div class="selection-heading">
+                                <input type="checkbox" class="selection-master-checkbox" data-selection-scope="categories"
+                                    aria-label="Select all categories">
+                                <h2>Categories</h2>
+                                <button type="button" class="selection-exit-button" aria-label="Exit selection mode">×</button>
+                            </div>
                             <p>Organize your launcher items into groups</p>
                         </div>
 
