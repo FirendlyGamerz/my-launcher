@@ -1586,104 +1586,127 @@ function addItemToCategory(originalItem, categoryId) {
 websiteForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (submittingItemForm) return;
+
     submittingItemForm = true;
 
-    const name = document.querySelector("#website-name").value.trim();
-    const rawUrl = document.querySelector("#website-url").value;
-    const favorite = document.querySelector("#website-favorite").checked;
-
-    if (!name) {
-        showMessage("Name Required", "Please enter a name for this website.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const normalizedUrl = normalizeWebsiteUrl(rawUrl);
-    if (!normalizedUrl) {
-        showMessage("Invalid URL", "Please enter a valid website address, such as youtube.com.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const duplicate = findDuplicateWebsite(normalizedUrl, editingItemId);
-    if (duplicate && pendingCategoryId !== null && editingItemId === null) {
-        showMessage(
-            "Already Exists",
-            `"${duplicate.name}" is already exists. Please import from launcher.`
-        );
-        return;
-    }
-    if (duplicate) {
-        showMessage("Already Added", `"${duplicate.name}" is already saved with this website address.`);
-        submittingItemForm = false;
-        return;
-    }
-
-    saveWebsiteButton.disabled = true;
-    saveWebsiteButton.textContent = "Checking...";
-
-    let websiteCheck;
     try {
-        websiteCheck = await window.launcherAPI.checkWebsite(normalizedUrl);
-    } catch {
-        websiteCheck = { valid: false, available: false };
-    }
+        const name = document.querySelector("#website-name").value.trim();
+        const rawUrl = document.querySelector("#website-url").value;
+        const favorite = document.querySelector("#website-favorite").checked;
 
-    saveWebsiteButton.disabled = false;
-    saveWebsiteButton.textContent = editingItemId ? "Update" : "Save";
-
-    if (!websiteCheck || !websiteCheck.valid) {
-        showMessage("Invalid URL", "The website address is not valid.");
-        submittingItemForm = false;
-        return;
-    }
-
-
-
-    const favicon = await window.launcherAPI.fetchFavicon(websiteCheck.url);
-
-    if (editingItemId !== null) {
-        const item = launcherItems.find((entry) => entry.id === editingItemId);
-        if (!item) {
-            showMessage("Update Failed", "The selected item could not be found.");
+        if (!name) {
+            showMessage("Name Required", "Please enter a name for this website.");
             return;
         }
-        item.name = name;
-        item.target = websiteCheck.url;
-        item.favorite = favorite;
-        item.favicon = favicon || null;
-        syncOriginalItemToCategoryCopies(item);
-    } else {
-        const originalItem = {
-            id: Date.now(),
-            name: name,
-            type: "website",
-            target: websiteCheck.url,
-            favorite: favorite,
-            favicon: favicon || null
-        };
 
-        launcherItems.push(originalItem);
-
-        // "+ New" from inside a category creates the original launcher item
-        // plus a separate category copy. The original stays an original item.
-        if (pendingCategoryId !== null) {
-            addItemToCategory(originalItem, pendingCategoryId);
-        } else {
-            getAddCategoryIds("website").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
+        const normalizedUrl = normalizeWebsiteUrl(rawUrl);
+        if (!normalizedUrl) {
+            showMessage("Invalid URL", "Please enter a valid website address, such as youtube.com.");
+            return;
         }
-    }
 
-    const saved = await saveLauncherItems(launcherItems);
-    if (!saved) {
-        showMessage("Save Failed", "The website could not be saved.");
+        const duplicate = findDuplicateWebsite(normalizedUrl, editingItemId);
+
+        if (duplicate && pendingCategoryId !== null && editingItemId === null) {
+            showMessage(
+                "Already Exists",
+                `"${duplicate.name}" is already exists. Please import from launcher.`
+            );
+            return;
+        }
+
+        if (duplicate) {
+            showMessage(
+                "Already Added",
+                `"${duplicate.name}" is already saved with this website address.`
+            );
+            return;
+        }
+
+        saveWebsiteButton.disabled = true;
+        saveWebsiteButton.textContent = "Checking...";
+
+        let websiteCheck;
+
+        try {
+            websiteCheck = await window.launcherAPI.checkWebsite(normalizedUrl);
+        } catch {
+            websiteCheck = {
+                valid: false,
+                available: false
+            };
+        }
+
+        saveWebsiteButton.disabled = false;
+        saveWebsiteButton.textContent =
+            editingItemId !== null ? "Update" : "Save";
+
+        if (!websiteCheck || !websiteCheck.valid) {
+            showMessage("Invalid URL", "The website address is not valid.");
+            return;
+        }
+
+        const favicon =
+            await window.launcherAPI.fetchFavicon(websiteCheck.url);
+
+        if (editingItemId !== null) {
+            const item = launcherItems.find(
+                (entry) => Number(entry.id) === Number(editingItemId)
+            );
+
+            if (!item) {
+                showMessage(
+                    "Update Failed",
+                    "The selected item could not be found."
+                );
+                return;
+            }
+
+            item.name = name;
+            item.target = websiteCheck.url;
+            item.favorite = favorite;
+            item.favicon = favicon || null;
+
+            syncOriginalItemToCategoryCopies(item);
+        } else {
+            const originalItem = {
+                id: Date.now(),
+                name: name,
+                type: "website",
+                target: websiteCheck.url,
+                favorite: favorite,
+                favicon: favicon || null
+            };
+
+            launcherItems.push(originalItem);
+
+            // "+ New" from inside a category creates the original
+            // launcher item plus a separate category copy.
+            if (pendingCategoryId !== null) {
+                addItemToCategory(originalItem, pendingCategoryId);
+            } else {
+                getAddCategoryIds("website").forEach((categoryId) => {
+                    addItemToCategory(originalItem, categoryId);
+                });
+            }
+        }
+
+        const saved = await saveLauncherItems(launcherItems);
+
+        if (!saved) {
+            showMessage(
+                "Save Failed",
+                "The website could not be saved."
+            );
+            return;
+        }
+
+        renderItems();
+        closeAddDialog();
+
+    } finally {
         submittingItemForm = false;
-        return;
     }
-
-    submittingItemForm = false;
-    renderItems();
-    closeAddDialog();
 });
 
 
@@ -1694,102 +1717,135 @@ websiteForm.addEventListener("submit", async (event) => {
 webappForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (submittingItemForm) return;
+
     submittingItemForm = true;
 
-    const name = document.querySelector("#webapp-name").value.trim();
-    const rawUrl = document.querySelector("#webapp-url").value;
-    const favorite = document.querySelector("#webapp-favorite").checked;
-
-    if (!name) {
-        showMessage("Name Required", "Please enter a name for this web app.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const normalizedUrl = normalizeWebsiteUrl(rawUrl);
-    if (!normalizedUrl) {
-        showMessage("Invalid URL", "Please enter a valid website address.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const duplicate = findDuplicateWebApp(normalizedUrl, editingItemId);
-    if (duplicate && pendingCategoryId !== null && editingItemId === null) {
-        showMessage(
-            "Already Exists",
-            `"${duplicate.name}" is already exists. Please import from launcher.`
-        );
-        return;
-    }
-    if (duplicate) {
-        showMessage("Already Added", `"${duplicate.name}" is already saved with this web app address.`);
-        submittingItemForm = false;
-        return;
-    }
-
-    saveWebappButton.disabled = true;
-    saveWebappButton.textContent = "Checking...";
-
-    let websiteCheck;
     try {
-        websiteCheck = await window.launcherAPI.checkWebsite(normalizedUrl);
-    } catch {
-        websiteCheck = { valid: false, available: false };
-    }
+        const name = document.querySelector("#webapp-name").value.trim();
+        const rawUrl = document.querySelector("#webapp-url").value;
+        const favorite = document.querySelector("#webapp-favorite").checked;
 
-    saveWebappButton.disabled = false;
-    saveWebappButton.textContent = editingItemId !== null ? "Update" : "Save";
-
-    if (!websiteCheck || !websiteCheck.valid) {
-        showMessage("Invalid Web App", "The web app address is not valid.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const favicon = await window.launcherAPI.fetchFavicon(websiteCheck.url);
-
-    if (editingItemId !== null) {
-        const item = launcherItems.find((entry) => entry.id === editingItemId);
-        if (!item) {
-            showMessage("Update Failed", "The selected web app could not be found.");
+        if (!name) {
+            showMessage("Name Required", "Please enter a name for this web app.");
             return;
         }
-        item.name = name;
-        item.target = websiteCheck.url;
-        item.favorite = favorite;
-        item.favicon = favicon || null;
-        syncOriginalItemToCategoryCopies(item);
-    } else {
-        const originalItem = {
-            id: Date.now(),
-            name: name,
-            type: "webapp",
-            target: websiteCheck.url,
-            favorite: favorite,
-            favicon: favicon || null
-        };
 
-        launcherItems.push(originalItem);
+        const normalizedUrl = normalizeWebsiteUrl(rawUrl);
 
-        // "+ New" from inside a category creates the original launcher item
-        // plus a separate category copy. The original stays an original item.
-        if (pendingCategoryId !== null) {
-            addItemToCategory(originalItem, pendingCategoryId);
-        } else {
-            getAddCategoryIds("webapp").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
+        if (!normalizedUrl) {
+            showMessage("Invalid URL", "Please enter a valid website address.");
+            return;
         }
-    }
 
-    const saved = await saveLauncherItems(launcherItems);
-    if (!saved) {
-        showMessage("Save Failed", "The web app could not be saved.");
+        const duplicate = findDuplicateWebApp(
+            normalizedUrl,
+            editingItemId
+        );
+
+        if (duplicate && pendingCategoryId !== null && editingItemId === null) {
+            showMessage(
+                "Already Exists",
+                `"${duplicate.name}" is already exists. Please import from launcher.`
+            );
+            return;
+        }
+
+        if (duplicate) {
+            showMessage(
+                "Already Added",
+                `"${duplicate.name}" is already saved with this web app address.`
+            );
+            return;
+        }
+
+        saveWebappButton.disabled = true;
+        saveWebappButton.textContent = "Checking...";
+
+        let websiteCheck;
+
+        try {
+            websiteCheck =
+                await window.launcherAPI.checkWebsite(normalizedUrl);
+        } catch {
+            websiteCheck = {
+                valid: false,
+                available: false
+            };
+        }
+
+        saveWebappButton.disabled = false;
+        saveWebappButton.textContent =
+            editingItemId !== null ? "Update" : "Save";
+
+        if (!websiteCheck || !websiteCheck.valid) {
+            showMessage(
+                "Invalid Web App",
+                "The web app address is not valid."
+            );
+            return;
+        }
+
+        const favicon =
+            await window.launcherAPI.fetchFavicon(websiteCheck.url);
+
+        if (editingItemId !== null) {
+            const item = launcherItems.find(
+                (entry) => Number(entry.id) === Number(editingItemId)
+            );
+
+            if (!item) {
+                showMessage(
+                    "Update Failed",
+                    "The selected web app could not be found."
+                );
+                return;
+            }
+
+            item.name = name;
+            item.target = websiteCheck.url;
+            item.favorite = favorite;
+            item.favicon = favicon || null;
+
+            syncOriginalItemToCategoryCopies(item);
+        } else {
+            const originalItem = {
+                id: Date.now(),
+                name: name,
+                type: "webapp",
+                target: websiteCheck.url,
+                favorite: favorite,
+                favicon: favicon || null
+            };
+
+            launcherItems.push(originalItem);
+
+            // "+ New" from inside a category creates the original
+            // launcher item plus a separate category copy.
+            if (pendingCategoryId !== null) {
+                addItemToCategory(originalItem, pendingCategoryId);
+            } else {
+                getAddCategoryIds("webapp").forEach((categoryId) => {
+                    addItemToCategory(originalItem, categoryId);
+                });
+            }
+        }
+
+        const saved = await saveLauncherItems(launcherItems);
+
+        if (!saved) {
+            showMessage(
+                "Save Failed",
+                "The web app could not be saved."
+            );
+            return;
+        }
+
+        renderItems();
+        closeAddDialog();
+
+    } finally {
         submittingItemForm = false;
-        return;
     }
-
-    submittingItemForm = false;
-    renderItems();
-    closeAddDialog();
 });
 
 
@@ -1849,108 +1905,158 @@ applicationForm.addEventListener("submit", async (event) => {
 
     submittingItemForm = true;
 
-    const name = document.querySelector("#application-name").value.trim();
-    const applicationPath = document.querySelector("#application-path").value.trim();
-    const favorite = document.querySelector("#application-favorite").checked;
-
-    if (!name || !applicationPath) {
-        showMessage("Fields Required", "Please enter a name and select an executable file.");
-        submittingItemForm = false;
-        return;
-    }
-
-    saveApplicationButton.disabled = true;
-    saveApplicationButton.textContent = "Checking...";
-
-    let applicationCheck;
     try {
-        applicationCheck = await window.launcherAPI.checkApplication(applicationPath);
-    } catch {
-        applicationCheck = { valid: false, exists: false };
-    }
+        const name = document.querySelector("#application-name").value.trim();
+        const applicationPath =
+            document.querySelector("#application-path").value.trim();
+        const favorite =
+            document.querySelector("#application-favorite").checked;
 
-    saveApplicationButton.disabled = false;
-    saveApplicationButton.textContent = editingItemId !== null ? "Update" : "Save";
-
-    if (!applicationCheck || !applicationCheck.valid || !applicationCheck.exists) {
-        showMessage("Invalid Application", "Please select a valid Windows executable (.exe) file.");
-        submittingItemForm = false;
-        return;
-    }
-
-    const duplicateApplication = findDuplicateApplication(applicationPath, editingItemId);
-
-    if (
-        duplicateApplication &&
-        pendingCategoryId !== null &&
-        editingItemId === null
-    ) {
-        showMessage(
-            "Already Exists",
-            `"${duplicateApplication.name}" is already exists. Please import from launcher.`
-        );
-        return;
-    }
-
-    if (duplicateApplication) {
-        showMessage("Already Added", `"${duplicateApplication.name}" is already saved with this path.`);
-        submittingItemForm = false;
-        return;
-    }
-
-    let applicationIcon = null;
-
-    try {
-        applicationIcon = await window.launcherAPI.fetchAppIcon(applicationPath);
-    } catch (error) {
-        console.error("Failed to fetch application icon:", error);
-    }
-
-    if (editingItemId !== null) {
-        const item = launcherItems.find((entry) => entry.id === editingItemId);
-        if (!item) {
-            showMessage("Update Failed", "The selected application could not be found.");
+        if (!name || !applicationPath) {
+            showMessage(
+                "Fields Required",
+                "Please enter a name and select an executable file."
+            );
             return;
         }
 
-        item.name = name;
-        item.target = applicationPath;
-        item.favorite = favorite;
+        saveApplicationButton.disabled = true;
+        saveApplicationButton.textContent = "Checking...";
 
-        if (applicationIcon) {
-            item.favicon = applicationIcon;
+        let applicationCheck;
+
+        try {
+            applicationCheck =
+                await window.launcherAPI.checkApplication(applicationPath);
+        } catch {
+            applicationCheck = {
+                valid: false,
+                exists: false
+            };
         }
-        syncOriginalItemToCategoryCopies(item);
-    } else {
-        const originalItem = {
-            id: Date.now(),
-            name: name,
-            type: "application",
-            target: applicationPath,
-            favorite: favorite,
-            favicon: applicationIcon || null
-        };
 
-        launcherItems.push(originalItem);
+        saveApplicationButton.disabled = false;
+        saveApplicationButton.textContent =
+            editingItemId !== null ? "Update" : "Save";
 
-        // "+ New" from inside a category creates the original launcher item
-        // plus a separate category copy. The original stays an original item.
-        if (pendingCategoryId !== null) {
-            addItemToCategory(originalItem, pendingCategoryId);
+        if (
+            !applicationCheck ||
+            !applicationCheck.valid ||
+            !applicationCheck.exists
+        ) {
+            showMessage(
+                "Invalid Application",
+                "Please select a valid Windows executable (.exe) file."
+            );
+            return;
+        }
+
+        const duplicateApplication =
+            findDuplicateApplication(
+                applicationPath,
+                editingItemId
+            );
+
+        if (
+            duplicateApplication &&
+            pendingCategoryId !== null &&
+            editingItemId === null
+        ) {
+            showMessage(
+                "Already Exists",
+                `"${duplicateApplication.name}" is already exists. Please import from launcher.`
+            );
+            return;
+        }
+
+        if (duplicateApplication) {
+            showMessage(
+                "Already Added",
+                `"${duplicateApplication.name}" is already saved with this path.`
+            );
+            return;
+        }
+
+        let applicationIcon = null;
+
+        try {
+            applicationIcon =
+                await window.launcherAPI.fetchAppIcon(applicationPath);
+        } catch (error) {
+            console.error(
+                "Failed to fetch application icon:",
+                error
+            );
+        }
+
+        if (editingItemId !== null) {
+            const item = launcherItems.find(
+                (entry) => Number(entry.id) === Number(editingItemId)
+            );
+
+            if (!item) {
+                showMessage(
+                    "Update Failed",
+                    "The selected application could not be found."
+                );
+                return;
+            }
+
+            item.name = name;
+            item.target = applicationPath;
+            item.favorite = favorite;
+
+            if (applicationIcon) {
+                item.favicon = applicationIcon;
+            }
+
+            syncOriginalItemToCategoryCopies(item);
+
         } else {
-            getAddCategoryIds("application").forEach((categoryId) => addItemToCategory(originalItem, categoryId));
+            const originalItem = {
+                id: Date.now(),
+                name: name,
+                type: "application",
+                target: applicationPath,
+                favorite: favorite,
+                favicon: applicationIcon || null
+            };
+
+            launcherItems.push(originalItem);
+
+            // "+ New" from inside a category creates the original
+            // launcher item plus a separate category copy.
+            if (pendingCategoryId !== null) {
+                addItemToCategory(
+                    originalItem,
+                    pendingCategoryId
+                );
+            } else {
+                getAddCategoryIds("application").forEach((categoryId) => {
+                    addItemToCategory(
+                        originalItem,
+                        categoryId
+                    );
+                });
+            }
         }
-    }
 
-    const saved = await saveLauncherItems(launcherItems);
-    if (!saved) {
-        showMessage("Save Failed", "The application could not be saved.");
+        const saved = await saveLauncherItems(launcherItems);
+
+        if (!saved) {
+            showMessage(
+                "Save Failed",
+                "The application could not be saved."
+            );
+            return;
+        }
+
+        renderItems();
+        closeAddDialog();
+
+    } finally {
         submittingItemForm = false;
-        return;
     }
-
-    renderItems();
-    closeAddDialog();
 });
 
 
