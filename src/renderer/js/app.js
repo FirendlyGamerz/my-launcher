@@ -908,6 +908,13 @@ const deleteCancel = document.querySelector("#delete-cancel");
 const deleteConfirm = document.querySelector("#delete-confirm");
 
 const contextMenu = document.querySelector("#context-menu");
+
+// The launcher shell uses overflow:hidden. Keep the context menu outside
+// that clipping container so it can appear at any position in the window.
+if (contextMenu && contextMenu.parentElement !== document.body) {
+    document.body.appendChild(contextMenu);
+}
+
 const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
 const contextRepair = document.querySelector("#context-repair");
