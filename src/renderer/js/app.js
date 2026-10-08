@@ -4034,11 +4034,11 @@ function openSelectedItemsContextMenu(x, y) {
 
     setSelectedMenuAction(
         "selected-select-all-categories",
-        isCategorySelection && !isSpecificCategory
+        isCategorySelection
     );
     setSelectedMenuAction(
         "selected-unselect-all-categories",
-        isCategorySelection && !isSpecificCategory
+        isCategorySelection
     );
 
     setSelectedMenuAction(
