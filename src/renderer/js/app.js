@@ -3409,6 +3409,62 @@ async function openSelectedItems() {
     }
 }
 
+async function applySelectedFavoriteAction(action) {
+    if (!selectionState.active || selectionState.scope === "categories") {
+        return;
+    }
+
+    const selectedIds = new Set(
+        [...selectionState.selectedItemIds].map(Number)
+    );
+
+    if (selectedIds.size === 0) {
+        return;
+    }
+
+    const oldItems = launcherItems.map((item) => ({ ...item }));
+
+    launcherItems.forEach((item) => {
+        if (!selectedIds.has(Number(item.id))) {
+            return;
+        }
+
+        const shouldFavorite = action === "add";
+        item.favorite = shouldFavorite;
+
+        if (!isCategoryCopy(item)) {
+            syncOriginalItemToCategoryCopies(item);
+        }
+    });
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Save Failed",
+            action === "add"
+                ? "The selected items could not be added to favorites."
+                : "The selected items could not be removed from favorites."
+        );
+        return;
+    }
+
+    renderItems();
+
+    const scopeIds = new Set(
+        getScopeItemIds(selectionState.scope).map(Number)
+    );
+
+    selectionState.selectedItemIds.forEach((id) => {
+        if (!scopeIds.has(Number(id))) {
+            selectionState.selectedItemIds.delete(Number(id));
+        }
+    });
+
+    syncSelectionUI();
+}
+
 
 /* ==============================
    Render Items
@@ -4396,6 +4452,35 @@ if (sectionContextMenu) {
 
 
 
+
+
+if (selectedItemsContextMenu) {
+    selectedItemsContextMenu.addEventListener("click", async (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !selectedItemsContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const action = button.dataset.action;
+        closeSelectedItemsContextMenu();
+
+        if (action === "selected-open") {
+            await openSelectedItems();
+        } else if (action === "selected-add-favorite") {
+            await applySelectedFavoriteAction("add");
+        } else if (action === "selected-remove-favorite") {
+            await applySelectedFavoriteAction("remove");
+        } else if (action === "selected-remove-category") {
+            await removeSelectedCategoryItems();
+        } else if (action === "selected-delete") {
+            openSelectedDeleteDialog();
+        }
+    });
+}
 
 
 contextMenu.addEventListener("click", async (event) => {
