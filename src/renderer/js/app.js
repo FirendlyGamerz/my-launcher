@@ -3913,7 +3913,10 @@ function openSelectedItemsContextMenu(x, y) {
     }
 
     if (separator) {
-        separator.style.display = "block";
+        separator.style.display =
+            isCategorySelection && !isCategoryItemsSelection
+                ? "none"
+                : "block";
     }
 
     selectedItemsContextMenu.style.display = "block";
