@@ -2868,7 +2868,7 @@ document.addEventListener("contextmenu", (event) => {
     event.stopPropagation();
 
     if (target.type === "item") {
-        if (selectionState.active && isItemSelected(target.itemId)) {
+        if (selectionState.active) {
             closeContextMenu();
             return;
         }
