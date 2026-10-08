@@ -1619,6 +1619,7 @@ const deleteConfirm = document.querySelector("#delete-confirm");
 
 const contextMenu = document.querySelector("#context-menu");
 const homeContextMenu = document.querySelector("#home-context-menu");
+const sectionContextMenu = document.querySelector("#section-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -2907,6 +2908,45 @@ document.addEventListener("contextmenu", (event) => {
         return;
     }
 
+    if (
+        target.type === "background" &&
+        activePage &&
+        activePage.id === "websites-section"
+    ) {
+        if (selectionState.active) {
+            return;
+        }
+
+        openSectionContextMenu("websites", event.clientX, event.clientY);
+        return;
+    }
+
+    if (
+        target.type === "background" &&
+        activePage &&
+        activePage.id === "webapps-section"
+    ) {
+        if (selectionState.active) {
+            return;
+        }
+
+        openSectionContextMenu("webapps", event.clientX, event.clientY);
+        return;
+    }
+
+    if (
+        target.type === "background" &&
+        activePage &&
+        activePage.id === "applications-section"
+    ) {
+        if (selectionState.active) {
+            return;
+        }
+
+        openSectionContextMenu("applications", event.clientX, event.clientY);
+        return;
+    }
+
     return;
 }, true);
 
@@ -3473,9 +3513,51 @@ function closeHomeContextMenu() {
     }
 }
 
+function closeSectionContextMenu() {
+    if (sectionContextMenu) {
+        sectionContextMenu.style.display = "none";
+    }
+}
+
+function openSectionContextMenu(type, x, y) {
+    if (!sectionContextMenu) {
+        return;
+    }
+
+    const addButton = sectionContextMenu.querySelector('[data-action="section-add"]');
+    const selectButton = sectionContextMenu.querySelector('[data-action="section-select"]');
+
+    if (addButton) {
+        addButton.textContent =
+            type === "websites"
+                ? "Add Website"
+                : type === "webapps"
+                    ? "Add Web App"
+                    : "Add Application";
+    }
+
+    sectionContextMenu.dataset.sectionType = type;
+    sectionContextMenu.style.display = "block";
+
+    const menuWidth = sectionContextMenu.offsetWidth;
+    const menuHeight = sectionContextMenu.offsetHeight;
+    const edgePadding = 8;
+
+    sectionContextMenu.style.left = Math.min(
+        x,
+        Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)
+    ) + "px";
+
+    sectionContextMenu.style.top = Math.min(
+        y,
+        Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)
+    ) + "px";
+}
+
 function closeContextMenu() {
     contextMenu.style.display = "none";
     closeHomeContextMenu();
+    closeSectionContextMenu();
     contextMenuItem = null;
     contextMenuTarget = null;
 }
@@ -3575,6 +3657,14 @@ document.addEventListener("keydown", (event) => {
     if (categoryItemNameDialog) categoryItemNameDialog.style.display = "none";
 });
 
+if (sectionContextMenu && sectionContextMenu.parentElement !== document.body) {
+    document.body.appendChild(sectionContextMenu);
+}
+
+if (sectionContextMenu) {
+    sectionContextMenu.style.zIndex = "10000";
+}
+
 if (homeContextMenu) {
     homeContextMenu.addEventListener("click", (event) => {
         const button = event.target.closest(".context-menu-item");
@@ -3595,7 +3685,39 @@ if (homeContextMenu) {
             startSelection("home");
         }
     });
+}if (sectionContextMenu) {
+    sectionContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !sectionContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const action = button.dataset.action;
+        const type = sectionContextMenu.dataset.sectionType;
+        closeSectionContextMenu();
+
+        if (action === "section-add") {
+            openAddDialog();
+
+            if (type === "websites") {
+                websiteButton.click();
+            } else if (type === "webapps") {
+                webappButton.click();
+            } else if (type === "applications") {
+                applicationButton.click();
+            }
+        } else if (action === "section-select") {
+            startSelection(type);
+        }
+    });
 }
+
+
+
 
 
 contextMenu.addEventListener("click", async (event) => {
