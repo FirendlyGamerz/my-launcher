@@ -1467,7 +1467,8 @@ input:checked+.slider:before {
    Context Menu
 ================================= */
 
-.context-menu {
+ .context-menu,
+.home-context-menu {
     position: fixed;
 
     display: none;
