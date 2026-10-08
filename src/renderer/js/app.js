@@ -1865,13 +1865,18 @@ if (homeContextMenu && homeContextMenu.parentElement !== document.body) {
 }
 
 if (selectedItemsContextMenu) {
-    selectedItemsContextMenu.addEventListener("click", (event) => {
+    selectedItemsContextMenu.addEventListener("click", async (event) => {
         const button = event.target.closest(".context-menu-item");
         if (!button || !selectedItemsContextMenu.contains(button)) return;
         event.preventDefault();
         event.stopPropagation();
-        // Step 11 is UI-only. Action logic will be implemented in later steps.
+
+        const action = button.dataset.action;
         closeSelectedItemsContextMenu();
+
+        if (action === "selected-open") {
+            await openSelectedItems();
+        }
     });
 }
 
@@ -3361,6 +3366,41 @@ async function openItem(item) {
         }
     } finally {
         openingItems.delete(openKey);
+    }
+}
+
+
+async function openSelectedItems() {
+    const selectedIds = [...selectionState.selectedItemIds];
+
+    if (selectedIds.length > 15) {
+        showMessage(
+            "Too Many Items",
+            "You can only select up to 15 launchers to open at once."
+        );
+        return;
+    }
+
+    const selectedItems = selectedIds
+        .map((id) => launcherItems.find((item) => Number(item.id) === Number(id)))
+        .filter(Boolean);
+
+    const openedTargets = new Set();
+    const uniqueItems = [];
+
+    selectedItems.forEach((item) => {
+        const type = String(item.type || "").toLowerCase();
+        const target = String(item.target || "");
+        const key = type + "::" + target;
+
+        if (openedTargets.has(key)) return;
+
+        openedTargets.add(key);
+        uniqueItems.push(item);
+    });
+
+    for (const item of uniqueItems) {
+        await openItem(item);
     }
 }
 
