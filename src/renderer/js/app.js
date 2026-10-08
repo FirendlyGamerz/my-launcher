@@ -861,6 +861,16 @@ const launcherPickerDialog = document.querySelector("#launcher-picker-dialog");
 const closeLauncherPicker = document.querySelector("#close-launcher-picker");
 const launcherPickerSearch = document.querySelector("#launcher-picker-search");
 const launcherPickerList = document.querySelector("#launcher-picker-list");
+const favoritesPickerDialog = document.querySelector("#favorites-picker-dialog");
+const closeFavoritesPicker = document.querySelector("#close-favorites-picker");
+const cancelFavoritesPicker = document.querySelector("#cancel-favorites-picker");
+const favoritesPickerSearch = document.querySelector("#favorites-picker-search");
+const favoritesPickerList = document.querySelector("#favorites-picker-list");
+const favoritesPickerTitle = document.querySelector("#favorites-picker-title");
+const favoritesPickerSubmit = document.querySelector("#favorites-picker-submit");
+
+let favoritesPickerMode = "add";
+let favoritesPickerSelectedIds = new Set();
 
 
 
@@ -1072,6 +1082,189 @@ if (launcherPickerDialog) {
 if (launcherPickerSearch) {
     launcherPickerSearch.addEventListener("input", renderLauncherPicker);
 }
+
+function openFavoritesPicker(mode) {
+    if (!favoritesPickerDialog) return;
+
+    favoritesPickerMode = mode === "remove" ? "remove" : "add";
+    favoritesPickerSelectedIds.clear();
+
+    if (favoritesPickerTitle) {
+        favoritesPickerTitle.textContent =
+            favoritesPickerMode === "add"
+                ? "Add to Favorite"
+                : "Remove from Favorite";
+    }
+
+    if (favoritesPickerSubmit) {
+        favoritesPickerSubmit.textContent =
+            favoritesPickerMode === "add" ? "Add" : "Remove";
+    }
+
+    if (favoritesPickerSearch) {
+        favoritesPickerSearch.value = "";
+    }
+
+    renderFavoritesPicker();
+    favoritesPickerDialog.style.display = "flex";
+    favoritesPickerSearch?.focus();
+}
+
+function closeFavoritesPickerDialog() {
+    if (favoritesPickerDialog) {
+        favoritesPickerDialog.style.display = "none";
+    }
+
+    favoritesPickerSelectedIds.clear();
+
+    if (favoritesPickerSearch) {
+        favoritesPickerSearch.value = "";
+    }
+}
+
+function renderFavoritesPicker() {
+    if (!favoritesPickerList) return;
+
+    const query = favoritesPickerSearch?.value.trim().toLowerCase() || "";
+    favoritesPickerList.innerHTML = "";
+
+    const filteredItems = launcherItems.filter((item) => {
+        if (item.categoryId !== undefined && item.categoryId !== null) {
+            return false;
+        }
+
+        const isFavorite = item.favorite === true;
+
+        if (favoritesPickerMode === "add" && isFavorite) return false;
+        if (favoritesPickerMode === "remove" && !isFavorite) return false;
+
+        const name = String(item.name || "").toLowerCase();
+        const type = getLauncherTypeLabel(item.type).toLowerCase();
+        const target = String(item.target || "").toLowerCase();
+
+        return !query ||
+            name.includes(query) ||
+            type.includes(query) ||
+            target.includes(query);
+    });
+
+    if (filteredItems.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "launcher-picker-empty";
+        empty.textContent = query
+            ? "No matching launcher items found."
+            : favoritesPickerMode === "add"
+                ? "All launcher items are already favorites."
+                : "No favorite launcher items have been added yet.";
+        favoritesPickerList.appendChild(empty);
+        return;
+    }
+
+    filteredItems.forEach((item) => {
+        const row = document.createElement("label");
+        row.className = "favorites-picker-item launcher-picker-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "favorites-picker-checkbox";
+        checkbox.checked = favoritesPickerSelectedIds.has(Number(item.id));
+        checkbox.addEventListener("change", () => {
+            const id = Number(item.id);
+            if (checkbox.checked) {
+                favoritesPickerSelectedIds.add(id);
+            } else {
+                favoritesPickerSelectedIds.delete(id);
+            }
+        });
+
+        const icon = document.createElement("div");
+        icon.className = "launcher-picker-icon";
+
+        if (item.favicon) {
+            const image = document.createElement("img");
+            image.src = item.favicon;
+            image.alt = "";
+            icon.appendChild(image);
+        } else {
+            icon.textContent = item.type === "application" ? "APP" : "WEB";
+        }
+
+        const info = document.createElement("div");
+        info.className = "launcher-picker-info";
+
+        const name = document.createElement("strong");
+        name.textContent = item.name;
+
+        const type = document.createElement("span");
+        type.textContent = getLauncherTypeLabel(item.type);
+
+        info.appendChild(name);
+        info.appendChild(type);
+
+        row.appendChild(checkbox);
+        row.appendChild(icon);
+        row.appendChild(info);
+        favoritesPickerList.appendChild(row);
+    });
+}
+
+async function applyFavoritesPicker() {
+    const selectedIds = [...favoritesPickerSelectedIds];
+
+    if (selectedIds.length === 0) {
+        closeFavoritesPickerDialog();
+        return;
+    }
+
+    const oldItems = [...launcherItems];
+
+    launcherItems.forEach((item) => {
+        if (selectedIds.includes(Number(item.id))) {
+            item.favorite = favoritesPickerMode === "add";
+        }
+    });
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Save Failed",
+            favoritesPickerMode === "add"
+                ? "The selected favorites could not be saved."
+                : "The selected favorites could not be removed."
+        );
+        return;
+    }
+
+    closeFavoritesPickerDialog();
+    renderItems();
+}
+
+if (closeFavoritesPicker) {
+    closeFavoritesPicker.addEventListener("click", closeFavoritesPickerDialog);
+}
+
+if (cancelFavoritesPicker) {
+    cancelFavoritesPicker.addEventListener("click", closeFavoritesPickerDialog);
+}
+
+if (favoritesPickerDialog) {
+    favoritesPickerDialog.addEventListener("click", (event) => {
+        if (event.target === favoritesPickerDialog) {
+            closeFavoritesPickerDialog();
+        }
+    });
+}
+
+if (favoritesPickerSearch) {
+    favoritesPickerSearch.addEventListener("input", renderFavoritesPicker);
+}
+
+if (favoritesPickerSubmit) {
+    favoritesPickerSubmit.addEventListener("click", applyFavoritesPicker);
+}
+
 
 function loadLauncherCategories() {
     try {
@@ -3916,9 +4109,9 @@ if (favoritesContextMenu) {
         if (action === "favorites-select") {
             startSelection("favorites");
         } else if (action === "favorites-add") {
-            showMessage("Coming Next", "Favorites add/remove picker will be added in Step 10.");
+            openFavoritesPicker("add");
         } else if (action === "favorites-remove") {
-            showMessage("Coming Next", "Favorites add/remove picker will be added in Step 10.");
+            openFavoritesPicker("remove");
         }
     });
 }
