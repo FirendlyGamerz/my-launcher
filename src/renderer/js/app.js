@@ -3160,6 +3160,11 @@ document.addEventListener("contextmenu", (event) => {
             activePage.id === "categories-section"
         ) {
             if (selectionState.active) {
+                if (!isCategorySelected(target.categoryId)) {
+                    closeSelectedItemsContextMenu();
+                    return;
+                }
+                openSelectedItemsContextMenu(event.clientX, event.clientY);
                 return;
             }
 
