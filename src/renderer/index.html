@@ -681,36 +681,48 @@
 
         <!-- Favorites Picker Dialog -->
 
-        <div class="launcher-picker-dialog" id="favorites-picker-dialog">
+        <div class="favorites-picker-dialog" id="favorites-picker-dialog">
 
-            <div class="launcher-picker-box">
+            <div class="favorites-picker-box">
 
-                <div class="dialog-header">
+                <div class="favorites-picker-header">
 
-                    <h3 id="favorites-picker-title">Add to Favorite</h3>
+                    <div>
+                        <h3 id="favorites-picker-title">Add to Favorite</h3>
+                        <p id="favorites-picker-subtitle">Choose launcher items to add to your favorites.</p>
+                    </div>
 
-                    <button type="button" class="close-button" id="close-favorites-picker">
+                    <button type="button" class="close-button" id="close-favorites-picker"
+                        aria-label="Close">
                         &times;
                     </button>
 
                 </div>
 
-                <div class="launcher-picker-content">
+                <div class="favorites-picker-body">
 
-                    <input type="search" id="favorites-picker-search" placeholder="Search launcher items..."
-                        autocomplete="off">
-
-                    <div class="launcher-picker-list" id="favorites-picker-list"></div>
-
-                    <div class="form-actions">
-                        <button type="button" class="form-cancel" id="cancel-favorites-picker">
-                            Cancel
-                        </button>
-                        <button type="button" id="favorites-picker-submit">
-                            Add
-                        </button>
+                    <div class="favorites-picker-search-wrap">
+                        <span class="favorites-picker-search-icon">⌕</span>
+                        <input type="search" id="favorites-picker-search" placeholder="Search launcher items..."
+                            autocomplete="off">
                     </div>
 
+                    <div class="favorites-picker-meta">
+                        <span id="favorites-picker-result-count">0 items</span>
+                        <span id="favorites-picker-selected-count">0 selected</span>
+                    </div>
+
+                    <div class="favorites-picker-list" id="favorites-picker-list"></div>
+
+                </div>
+
+                <div class="favorites-picker-footer">
+                    <button type="button" class="form-cancel" id="cancel-favorites-picker">
+                        Cancel
+                    </button>
+                    <button type="button" class="favorites-picker-submit" id="favorites-picker-submit">
+                        Add
+                    </button>
                 </div>
 
             </div>
