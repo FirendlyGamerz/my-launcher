@@ -404,6 +404,10 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+    if (selectedItemsContextMenu && !selectedItemsContextMenu.contains(event.target)) {
+        closeSelectedItemsContextMenu();
+    }
+
     const exitButton = event.target.closest(".selection-exit-button");
 
     if (!exitButton) {
@@ -1845,6 +1849,7 @@ const sectionContextMenu = document.querySelector("#section-context-menu");
 const favoritesContextMenu = document.querySelector("#favorites-context-menu");
 const categoriesContextMenu = document.querySelector("#categories-context-menu");
 const categoryContextMenu = document.querySelector("#category-context-menu");
+const selectedItemsContextMenu = document.querySelector("#selected-items-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -1859,6 +1864,17 @@ if (homeContextMenu && homeContextMenu.parentElement !== document.body) {
     document.body.appendChild(homeContextMenu);
 }
 
+if (selectedItemsContextMenu) {
+    selectedItemsContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+        if (!button || !selectedItemsContextMenu.contains(button)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        // Step 11 is UI-only. Action logic will be implemented in later steps.
+        closeSelectedItemsContextMenu();
+    });
+}
+
 if (homeContextMenu) {
     homeContextMenu.style.zIndex = "10000";
 }
@@ -1869,6 +1885,14 @@ if (categoryContextMenu && categoryContextMenu.parentElement !== document.body) 
 
 if (categoryContextMenu) {
     categoryContextMenu.style.zIndex = "10000";
+}
+
+if (selectedItemsContextMenu && selectedItemsContextMenu.parentElement !== document.body) {
+    document.body.appendChild(selectedItemsContextMenu);
+}
+
+if (selectedItemsContextMenu) {
+    selectedItemsContextMenu.style.zIndex = "10000";
 }
 
 const contextFavorite = document.querySelector("#context-favorite");
@@ -3111,9 +3135,14 @@ document.addEventListener("contextmenu", (event) => {
     event.stopPropagation();
 
     if (target.type === "item") {
-        if (selectionState.active) {
-            closeContextMenu();
-            return;
+if (selectionState.active) {
+                if (!isCategorySelected(target.categoryId)) {
+                    closeSelectedItemsContextMenu();
+                    return;
+                }
+                openSelectedItemsContextMenu(event.clientX, event.clientY);
+                return;
+            }
         }
 
         openContextMenu(target.item, event.clientX, event.clientY);
@@ -3915,6 +3944,61 @@ function openSectionContextMenu(type, x, y) {
     ) + "px";
 }
 
+function closeSelectedItemsContextMenu() {
+    if (selectedItemsContextMenu) {
+        selectedItemsContextMenu.style.display = "none";
+    }
+}
+
+function setSelectedMenuAction(action, visible) {
+    const button = selectedItemsContextMenu?.querySelector('[data-action="' + action + '"]');
+    if (button) button.style.display = visible ? "flex" : "none";
+}
+
+function setSelectedMenuLabel(action, text) {
+    const button = selectedItemsContextMenu?.querySelector('[data-action="' + action + '"] span');
+    if (button) button.textContent = text;
+}
+
+function openSelectedItemsContextMenu(x, y) {
+    if (!selectedItemsContextMenu || !selectionState.active) return;
+
+    const isCategorySelection = selectionState.scope === "categories";
+    const isSpecificCategory = isCategorySelection && selectionState.categoryId !== null && selectionState.categoryId !== undefined;
+    const isNormalItemSelection = !isCategorySelection;
+
+    setSelectedMenuAction("selected-open", true);
+    setSelectedMenuAction("selected-select-all", isNormalItemSelection);
+    setSelectedMenuAction("selected-unselect-all", isNormalItemSelection);
+    setSelectedMenuAction("selected-select-all-categories", isCategorySelection && !isSpecificCategory);
+    setSelectedMenuAction("selected-unselect-all-categories", isCategorySelection && !isSpecificCategory);
+    setSelectedMenuAction("selected-select-category", isSpecificCategory);
+    setSelectedMenuAction("selected-unselect-category", isSpecificCategory);
+
+    const selectedItems = launcherItems.filter((item) => selectionState.selectedItemIds.has(Number(item.id)));
+    const allFavorite = selectedItems.length > 0 && selectedItems.every((item) => item.favorite === true);
+    const allNotFavorite = selectedItems.length > 0 && selectedItems.every((item) => item.favorite !== true);
+    setSelectedMenuAction("selected-add-favorite", isNormalItemSelection && !allFavorite);
+    setSelectedMenuAction("selected-remove-favorite", isNormalItemSelection && !allNotFavorite);
+    setSelectedMenuAction("selected-remove-category", isCategorySelection);
+    setSelectedMenuAction("selected-delete", true);
+
+    if (isSpecificCategory) {
+        const category = launcherCategories.find((entry) => Number(entry.id) === Number(selectionState.categoryId));
+        if (category) {
+            setSelectedMenuLabel("selected-select-category", 'Select "' + category.name + '" ');
+            setSelectedMenuLabel("selected-unselect-category", 'Unselect "' + category.name + '" ');
+        }
+    }
+
+    selectedItemsContextMenu.style.display = "block";
+    const menuWidth = selectedItemsContextMenu.offsetWidth;
+    const menuHeight = selectedItemsContextMenu.offsetHeight;
+    const edgePadding = 8;
+    selectedItemsContextMenu.style.left = Math.min(x, Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)) + "px";
+    selectedItemsContextMenu.style.top = Math.min(y, Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)) + "px";
+}
+
 function closeContextMenu() {
     contextMenu.style.display = "none";
     closeHomeContextMenu();
@@ -3922,6 +4006,7 @@ function closeContextMenu() {
     closeFavoritesContextMenu();
     closeCategoriesContextMenu();
     closeCategoryContextMenu();
+    closeSelectedItemsContextMenu();
     contextMenuItem = null;
     contextMenuTarget = null;
 }
