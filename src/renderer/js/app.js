@@ -3147,13 +3147,14 @@ document.addEventListener("contextmenu", (event) => {
 
     if (target.type === "item") {
         if (selectionState.active) {
-            selectedMenuCategoryId =
+            const menuCategoryId =
                 target.item.categoryId !== undefined &&
                 target.item.categoryId !== null
                     ? Number(target.item.categoryId)
                     : null;
 
             closeContextMenu();
+            selectedMenuCategoryId = menuCategoryId;
             openSelectedItemsContextMenu(event.clientX, event.clientY);
             return;
         }
@@ -3172,8 +3173,9 @@ document.addEventListener("contextmenu", (event) => {
             activePage.id === "categories-section"
         ) {
             if (selectionState.active) {
-                selectedMenuCategoryId = Number(target.categoryId);
+                const menuCategoryId = Number(target.categoryId);
                 closeContextMenu();
+                selectedMenuCategoryId = menuCategoryId;
                 openSelectedItemsContextMenu(event.clientX, event.clientY);
                 return;
             }
@@ -3222,8 +3224,8 @@ document.addEventListener("contextmenu", (event) => {
         activePage.id === "categories-section"
     ) {
         if (selectionState.active) {
-            selectedMenuCategoryId = null;
             closeContextMenu();
+            selectedMenuCategoryId = null;
             openSelectedItemsContextMenu(event.clientX, event.clientY);
             return;
         }
