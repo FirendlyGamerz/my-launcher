@@ -3135,12 +3135,10 @@ document.addEventListener("contextmenu", (event) => {
     event.stopPropagation();
 
     if (target.type === "item") {
-            if (selectionState.active) {
-                if (!isCategorySelected(target.categoryId)) {
-                    closeSelectedItemsContextMenu();
-                    return;
-                }
-                openSelectedItemsContextMenu(event.clientX, event.clientY);
+        if (selectionState.active) {
+            if (!isItemSelected(target.item.id)) {
+                closeSelectedItemsContextMenu();
+                closeContextMenu();
                 return;
             }
             closeContextMenu();
