@@ -3375,6 +3375,78 @@ async function openItem(item) {
 }
 
 
+function selectAllCategoriesAction() {
+    if (!selectionState.active || selectionState.scope !== "categories") {
+        return;
+    }
+
+    const categoryIds = getCategoryIds();
+
+    categoryIds.forEach((categoryId) => {
+        selectionState.selectedCategoryIds.add(Number(categoryId));
+        getCategoryItemIds(categoryId).forEach((itemId) => {
+            selectionState.selectedItemIds.add(Number(itemId));
+        });
+    });
+
+    syncSelectionUI();
+}
+
+function unselectAllCategoriesAction() {
+    if (!selectionState.active || selectionState.scope !== "categories") {
+        return;
+    }
+
+    selectionState.selectedCategoryIds.clear();
+    selectionState.selectedItemIds.clear();
+
+    syncSelectionUI();
+}
+
+function selectSpecificCategoryAction(categoryId) {
+    if (
+        !selectionState.active ||
+        selectionState.scope !== "categories" ||
+        categoryId === null ||
+        categoryId === undefined
+    ) {
+        return;
+    }
+
+    const id = Number(categoryId);
+
+    if (!launcherCategories.some((category) => Number(category.id) === id)) {
+        return;
+    }
+
+    selectionState.selectedCategoryIds.add(id);
+    getCategoryItemIds(id).forEach((itemId) => {
+        selectionState.selectedItemIds.add(Number(itemId));
+    });
+
+    syncSelectionUI();
+}
+
+function unselectSpecificCategoryAction(categoryId) {
+    if (
+        !selectionState.active ||
+        selectionState.scope !== "categories" ||
+        categoryId === null ||
+        categoryId === undefined
+    ) {
+        return;
+    }
+
+    const id = Number(categoryId);
+
+    selectionState.selectedCategoryIds.delete(id);
+    getCategoryItemIds(id).forEach((itemId) => {
+        selectionState.selectedItemIds.delete(Number(itemId));
+    });
+
+    syncSelectionUI();
+}
+
 async function openSelectedItems() {
     const selectedIds = [...selectionState.selectedItemIds];
 
@@ -4462,6 +4534,14 @@ if (selectedItemsContextMenu) {
 
         if (action === "selected-open") {
             await openSelectedItems();
+        } else if (action === "selected-select-all-categories") {
+            selectAllCategoriesAction();
+        } else if (action === "selected-unselect-all-categories") {
+            unselectAllCategoriesAction();
+        } else if (action === "selected-select-category") {
+            selectSpecificCategoryAction(selectedMenuCategoryId);
+        } else if (action === "selected-unselect-category") {
+            unselectSpecificCategoryAction(selectedMenuCategoryId);
         } else if (action === "selected-add-favorite") {
             await applySelectedFavoriteAction("add");
         } else if (action === "selected-remove-favorite") {
