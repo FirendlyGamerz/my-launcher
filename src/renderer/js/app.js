@@ -4,6 +4,7 @@ let launcherCategories = [];
 let pendingCategoryId = null;
 let editingCategoryId = null;
 let deleteTargetCategory = null;
+let deleteTargetSelection = null;
 
 const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
 
@@ -1876,6 +1877,8 @@ if (selectedItemsContextMenu) {
 
         if (action === "selected-open") {
             await openSelectedItems();
+        } else if (action === "selected-delete") {
+            openSelectedDeleteDialog();
         }
     });
 }
@@ -4501,12 +4504,147 @@ function closeDeleteDialog() {
     deleteDialog.style.display = "none";
     deleteTargetItem = null;
     deleteTargetCategory = null;
+    deleteTargetSelection = null;
     deleteTitle.textContent = "Delete Item?";
+}
+
+function getSelectedDeleteConfirmation() {
+    const isCategorySelection = selectionState.scope === "categories";
+    const isSpecificCategory =
+        isCategorySelection &&
+        selectionState.categoryId !== null &&
+        selectionState.categoryId !== undefined;
+
+    if (isSpecificCategory) {
+        return {
+            title: "Delete Selected Items?",
+            message: "Do you want to delete selected items?"
+        };
+    }
+
+    if (isCategorySelection) {
+        return {
+            title: "Delete Selected Items?",
+            message: "Do you want to delete selected categories?"
+        };
+    }
+
+    const messages = {
+        home: "Do you want to delete selected launchers?",
+        websites: "Do you want to delete selected websites?",
+        webapps: "Do you want to delete selected web apps?",
+        applications: "Do you want to delete selected applications?",
+        favorites: "Do you want to delete selected launchers?"
+    };
+
+    return {
+        title: "Delete Selected Items?",
+        message: messages[selectionState.scope] || "Do you want to delete selected launchers?"
+    };
+}
+
+function openSelectedDeleteDialog() {
+    if (!selectionState.active) return;
+
+    const hasSelectedItems = selectionState.selectedItemIds.size > 0;
+    const hasSelectedCategories = selectionState.selectedCategoryIds.size > 0;
+
+    if (!hasSelectedItems && !hasSelectedCategories) {
+        return;
+    }
+
+    const confirmation = getSelectedDeleteConfirmation();
+    deleteTargetSelection = {
+        scope: selectionState.scope,
+        categoryId: selectionState.categoryId,
+        itemIds: [...selectionState.selectedItemIds],
+        categoryIds: [...selectionState.selectedCategoryIds]
+    };
+    deleteTargetItem = null;
+    deleteTargetCategory = null;
+    deleteTitle.textContent = confirmation.title;
+    deleteMessage.textContent = confirmation.message;
+    deleteDialog.style.display = "flex";
 }
 
 deleteCancel.addEventListener("click", closeDeleteDialog);
 
 deleteConfirm.addEventListener("click", async () => {
+    if (deleteTargetSelection) {
+        const target = deleteTargetSelection;
+        const oldItems = [...launcherItems];
+        const oldCategories = [...launcherCategories];
+
+        if (target.scope === "categories" &&
+            target.categoryId !== null &&
+            target.categoryId !== undefined) {
+            const selectedItemIds = new Set(target.itemIds.map(Number));
+            launcherItems = launcherItems.filter(
+                (item) => !selectedItemIds.has(Number(item.id))
+            );
+        } else if (target.scope === "categories") {
+            const selectedCategoryIds = new Set(target.categoryIds.map(Number));
+            const selectedItemIds = new Set(target.itemIds.map(Number));
+
+            launcherCategories = launcherCategories.filter(
+                (category) => !selectedCategoryIds.has(Number(category.id))
+            );
+
+            launcherItems = launcherItems.filter((item) => {
+                const categoryId = item.categoryId;
+                if (
+                    categoryId !== undefined &&
+                    categoryId !== null &&
+                    selectedCategoryIds.has(Number(categoryId))
+                ) {
+                    return false;
+                }
+
+                return !selectedItemIds.has(Number(item.id));
+            });
+        } else {
+            const selectedItemIds = new Set(target.itemIds.map(Number));
+
+            launcherItems = launcherItems.filter((item) => {
+                if (selectedItemIds.has(Number(item.id))) {
+                    return false;
+                }
+
+                return !selectedItemIds.has(Number(item.sourceItemId));
+            });
+        }
+
+        const categoriesChanged =
+            JSON.stringify(oldCategories) !== JSON.stringify(launcherCategories);
+        const itemsChanged =
+            JSON.stringify(oldItems) !== JSON.stringify(launcherItems);
+
+        const categoriesSaved = categoriesChanged
+            ? saveLauncherCategories()
+            : true;
+        const itemsSaved = itemsChanged
+            ? await saveLauncherItems(launcherItems)
+            : true;
+
+        if (!categoriesSaved || !itemsSaved) {
+            launcherCategories = oldCategories;
+            launcherItems = oldItems;
+            saveLauncherCategories();
+            await saveLauncherItems(launcherItems);
+            closeDeleteDialog();
+            showMessage("Delete Failed", "The selected items could not be deleted.");
+            return;
+        }
+
+        clearSelection();
+        closeDeleteDialog();
+        refreshAllAddCategoryControls();
+        renderItems();
+        renderCategories();
+        syncSelectionUI();
+        return;
+    }
+
     if (deleteTargetCategory) {
         const category = deleteTargetCategory;
         const oldCategories = [...launcherCategories];
