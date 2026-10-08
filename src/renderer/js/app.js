@@ -1629,6 +1629,14 @@ if (contextMenu) {
     contextMenu.style.zIndex = "10000";
 }
 
+if (homeContextMenu && homeContextMenu.parentElement !== document.body) {
+    document.body.appendChild(homeContextMenu);
+}
+
+if (homeContextMenu) {
+    homeContextMenu.style.zIndex = "10000";
+}
+
 const contextFavorite = document.querySelector("#context-favorite");
 const contextCopy = document.querySelector("#context-copy");
 const contextRepair = document.querySelector("#context-repair");
