@@ -1629,6 +1629,7 @@ const homeContextMenu = document.querySelector("#home-context-menu");
 const sectionContextMenu = document.querySelector("#section-context-menu");
 const favoritesContextMenu = document.querySelector("#favorites-context-menu");
 const categoriesContextMenu = document.querySelector("#categories-context-menu");
+const categoryContextMenu = document.querySelector("#category-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -1645,6 +1646,14 @@ if (homeContextMenu && homeContextMenu.parentElement !== document.body) {
 
 if (homeContextMenu) {
     homeContextMenu.style.zIndex = "10000";
+}
+
+if (categoryContextMenu && categoryContextMenu.parentElement !== document.body) {
+    document.body.appendChild(categoryContextMenu);
+}
+
+if (categoryContextMenu) {
+    categoryContextMenu.style.zIndex = "10000";
 }
 
 const contextFavorite = document.querySelector("#context-favorite");
@@ -2899,6 +2908,23 @@ document.addEventListener("contextmenu", (event) => {
     closeContextMenu();
 
     if (target.type === "category") {
+        const activePage = document.querySelector(".page-section.active-page");
+
+        if (
+            activePage &&
+            activePage.id === "categories-section"
+        ) {
+            if (selectionState.active) {
+                return;
+            }
+
+            openCategoryContextMenu(
+                target.categoryId,
+                event.clientX,
+                event.clientY
+            );
+        }
+
         return;
     }
 
@@ -3566,6 +3592,35 @@ function closeCategoriesContextMenu() {
     }
 }
 
+function closeCategoryContextMenu() {
+    if (categoryContextMenu) {
+        categoryContextMenu.style.display = "none";
+    }
+}
+
+function openCategoryContextMenu(categoryId, x, y) {
+    if (!categoryContextMenu) {
+        return;
+    }
+
+    categoryContextMenu.dataset.categoryId = String(categoryId);
+    categoryContextMenu.style.display = "block";
+
+    const menuWidth = categoryContextMenu.offsetWidth;
+    const menuHeight = categoryContextMenu.offsetHeight;
+    const edgePadding = 8;
+
+    categoryContextMenu.style.left = Math.min(
+        x,
+        Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)
+    ) + "px";
+
+    categoryContextMenu.style.top = Math.min(
+        y,
+        Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)
+    ) + "px";
+}
+
 function openCategoriesContextMenu(x, y) {
     if (!categoriesContextMenu) {
         return;
@@ -3651,6 +3706,7 @@ function closeContextMenu() {
     closeSectionContextMenu();
     closeFavoritesContextMenu();
     closeCategoriesContextMenu();
+    closeCategoryContextMenu();
     contextMenuItem = null;
     contextMenuTarget = null;
 }
@@ -3812,6 +3868,32 @@ if (homeContextMenu) {
             addCategoryButton.click();
         } else if (action === "categories-select") {
             startSelection("categories");
+        }
+    });
+}
+
+
+if (categoryContextMenu) {
+    categoryContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !categoryContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const action = button.dataset.action;
+        const categoryId = Number(categoryContextMenu.dataset.categoryId);
+
+        closeCategoryContextMenu();
+
+        if (action === "category-add-launcher") {
+            pendingCategoryId = categoryId;
+            openCategorySourceDialog();
+        } else if (action === "category-select-items") {
+            startSelection("categories", categoryId);
         }
     });
 }
