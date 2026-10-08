@@ -3895,15 +3895,17 @@ function getUniqueSelectedItemsForOpening() {
 }
 
 async function openSelectedItems() {
-    const items = getUniqueSelectedItemsForOpening();
+    const selectedCount = getSelectedItemIds().length;
 
-    if (items.length > 15) {
+    if (selectedCount > 15) {
         showMessage(
             "Too Many Launchers",
             "You can only select up to 15 launchers to open at once."
         );
         return;
     }
+
+    const items = getUniqueSelectedItemsForOpening();
 
     for (const item of items) {
         await openItem(item);
@@ -4684,6 +4686,7 @@ if (selectedItemsContextMenu) {
         await deleteSelectedItemsAndCategories();
     }
 });
+}
 
 
 contextMenu.addEventListener("click", async (event) => {
