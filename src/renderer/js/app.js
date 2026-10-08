@@ -1620,6 +1620,7 @@ const deleteConfirm = document.querySelector("#delete-confirm");
 const contextMenu = document.querySelector("#context-menu");
 const homeContextMenu = document.querySelector("#home-context-menu");
 const sectionContextMenu = document.querySelector("#section-context-menu");
+const favoritesContextMenu = document.querySelector("#favorites-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -2911,6 +2912,19 @@ document.addEventListener("contextmenu", (event) => {
     if (
         target.type === "background" &&
         activePage &&
+        activePage.id === "favorites-section"
+    ) {
+        if (selectionState.active) {
+            return;
+        }
+
+        openFavoritesContextMenu(event.clientX, event.clientY);
+        return;
+    }
+
+    if (
+        target.type === "background" &&
+        activePage &&
         activePage.id === "websites-section"
     ) {
         if (selectionState.active) {
@@ -3519,6 +3533,34 @@ function closeSectionContextMenu() {
     }
 }
 
+function closeFavoritesContextMenu() {
+    if (favoritesContextMenu) {
+        favoritesContextMenu.style.display = "none";
+    }
+}
+
+function openFavoritesContextMenu(x, y) {
+    if (!favoritesContextMenu) {
+        return;
+    }
+
+    favoritesContextMenu.style.display = "block";
+
+    const menuWidth = favoritesContextMenu.offsetWidth;
+    const menuHeight = favoritesContextMenu.offsetHeight;
+    const edgePadding = 8;
+
+    favoritesContextMenu.style.left = Math.min(
+        x,
+        Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)
+    ) + "px";
+
+    favoritesContextMenu.style.top = Math.min(
+        y,
+        Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)
+    ) + "px";
+}
+
 function openSectionContextMenu(type, x, y) {
     if (!sectionContextMenu) {
         return;
@@ -3558,6 +3600,7 @@ function closeContextMenu() {
     contextMenu.style.display = "none";
     closeHomeContextMenu();
     closeSectionContextMenu();
+    closeFavoritesContextMenu();
     contextMenuItem = null;
     contextMenuTarget = null;
 }
@@ -3665,6 +3708,14 @@ if (sectionContextMenu) {
     sectionContextMenu.style.zIndex = "10000";
 }
 
+if (favoritesContextMenu && favoritesContextMenu.parentElement !== document.body) {
+    document.body.appendChild(favoritesContextMenu);
+}
+
+if (favoritesContextMenu) {
+    favoritesContextMenu.style.zIndex = "10000";
+}
+
 if (homeContextMenu) {
     homeContextMenu.addEventListener("click", (event) => {
         const button = event.target.closest(".context-menu-item");
@@ -3685,7 +3736,32 @@ if (homeContextMenu) {
             startSelection("home");
         }
     });
-}if (sectionContextMenu) {
+}if (favoritesContextMenu) {
+    favoritesContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !favoritesContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const action = button.dataset.action;
+        closeFavoritesContextMenu();
+
+        if (action === "favorites-select") {
+            startSelection("favorites");
+        } else if (action === "favorites-add") {
+            showMessage("Coming Next", "Favorites add/remove picker will be added in Step 10.");
+        } else if (action === "favorites-remove") {
+            showMessage("Coming Next", "Favorites add/remove picker will be added in Step 10.");
+        }
+    });
+}
+
+
+if (sectionContextMenu) {
     sectionContextMenu.addEventListener("click", (event) => {
         const button = event.target.closest(".context-menu-item");
 
