@@ -195,6 +195,13 @@ function areAllCategoryItemsSelected(categoryId) {
 
 function syncCategorySelectionState(categoryId) {
     const id = Number(categoryId);
+    const itemIds = getCategoryItemIds(id);
+
+    // Empty categories should not become selected automatically.
+    // They can still be selected manually through their category checkbox.
+    if (itemIds.length === 0) {
+        return;
+    }
 
     if (areAllCategoryItemsSelected(id)) {
         selectionState.selectedCategoryIds.add(id);
