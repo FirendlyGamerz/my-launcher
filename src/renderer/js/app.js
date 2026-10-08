@@ -3136,11 +3136,15 @@ document.addEventListener("contextmenu", (event) => {
 
     if (target.type === "item") {
         if (selectionState.active) {
-            if (!isItemSelected(target.item.id)) {
-                closeSelectedItemsContextMenu();
-                closeContextMenu();
-                return;
+            if (
+                target.item.categoryId !== undefined &&
+                target.item.categoryId !== null
+            ) {
+                selectionState.categoryId = Number(target.item.categoryId);
+            } else {
+                selectionState.categoryId = null;
             }
+
             closeContextMenu();
             openSelectedItemsContextMenu(event.clientX, event.clientY);
             return;
@@ -3160,10 +3164,8 @@ document.addEventListener("contextmenu", (event) => {
             activePage.id === "categories-section"
         ) {
             if (selectionState.active) {
-                if (!isCategorySelected(target.categoryId)) {
-                    closeSelectedItemsContextMenu();
-                    return;
-                }
+                selectionState.categoryId = Number(target.categoryId);
+                closeContextMenu();
                 openSelectedItemsContextMenu(event.clientX, event.clientY);
                 return;
             }
@@ -3212,6 +3214,9 @@ document.addEventListener("contextmenu", (event) => {
         activePage.id === "categories-section"
     ) {
         if (selectionState.active) {
+            selectionState.categoryId = null;
+            closeContextMenu();
+            openSelectedItemsContextMenu(event.clientX, event.clientY);
             return;
         }
 
@@ -3970,41 +3975,120 @@ function openSelectedItemsContextMenu(x, y) {
     if (!selectedItemsContextMenu || !selectionState.active) return;
 
     const isCategorySelection = selectionState.scope === "categories";
-    const isSpecificCategory = isCategorySelection && selectionState.categoryId !== null && selectionState.categoryId !== undefined;
+    const isSpecificCategory =
+        isCategorySelection &&
+        selectionState.categoryId !== null &&
+        selectionState.categoryId !== undefined;
     const isNormalItemSelection = !isCategorySelection;
 
     setSelectedMenuAction("selected-open", true);
-    setSelectedMenuAction("selected-select-all", isNormalItemSelection);
-    setSelectedMenuAction("selected-unselect-all", isNormalItemSelection);
-    setSelectedMenuAction("selected-select-all-categories", isCategorySelection && !isSpecificCategory);
-    setSelectedMenuAction("selected-unselect-all-categories", isCategorySelection && !isSpecificCategory);
-    setSelectedMenuAction("selected-select-category", isSpecificCategory);
-    setSelectedMenuAction("selected-unselect-category", isSpecificCategory);
 
-    const selectedItems = launcherItems.filter((item) => selectionState.selectedItemIds.has(Number(item.id)));
-    const allFavorite = selectedItems.length > 0 && selectedItems.every((item) => item.favorite === true);
-    const allNotFavorite = selectedItems.length > 0 && selectedItems.every((item) => item.favorite !== true);
-    setSelectedMenuAction("selected-add-favorite", isNormalItemSelection && !allFavorite);
-    setSelectedMenuAction("selected-remove-favorite", isNormalItemSelection && !allNotFavorite);
-    setSelectedMenuAction("selected-remove-category", isCategorySelection);
+    setSelectedMenuAction(
+        "selected-select-all",
+        isNormalItemSelection
+    );
+    setSelectedMenuAction(
+        "selected-unselect-all",
+        isNormalItemSelection
+    );
+
+    setSelectedMenuAction(
+        "selected-select-all-categories",
+        isCategorySelection && !isSpecificCategory
+    );
+    setSelectedMenuAction(
+        "selected-unselect-all-categories",
+        isCategorySelection && !isSpecificCategory
+    );
+
+    setSelectedMenuAction(
+        "selected-select-category",
+        isCategorySelection && isSpecificCategory
+    );
+    setSelectedMenuAction(
+        "selected-unselect-category",
+        isCategorySelection && isSpecificCategory
+    );
+
+    const selectedItems = launcherItems.filter((item) =>
+        selectionState.selectedItemIds.has(Number(item.id))
+    );
+
+    const allFavorite =
+        selectedItems.length > 0 &&
+        selectedItems.every((item) => item.favorite === true);
+
+    const allNotFavorite =
+        selectedItems.length > 0 &&
+        selectedItems.every((item) => item.favorite !== true);
+
+    setSelectedMenuAction(
+        "selected-add-favorite",
+        isNormalItemSelection && !allFavorite
+    );
+    setSelectedMenuAction(
+        "selected-remove-favorite",
+        isNormalItemSelection && !allNotFavorite
+    );
+
+    setSelectedMenuAction(
+        "selected-remove-category",
+        isCategorySelection
+    );
+
     setSelectedMenuAction("selected-delete", true);
 
+    if (isCategorySelection) {
+        setSelectedMenuLabel(
+            "selected-remove-category",
+            isSpecificCategory
+                ? "Remove from Category"
+                : "Remove from Categories"
+        );
+    }
+
     if (isSpecificCategory) {
-        const category = launcherCategories.find((entry) => Number(entry.id) === Number(selectionState.categoryId));
+        const category = launcherCategories.find(
+            (entry) =>
+                Number(entry.id) === Number(selectionState.categoryId)
+        );
+
         if (category) {
-            setSelectedMenuLabel("selected-select-category", 'Select "' + category.name + '" ');
-            setSelectedMenuLabel("selected-unselect-category", 'Unselect "' + category.name + '" ');
+            setSelectedMenuLabel(
+                "selected-select-category",
+                'Select "' + category.name + '"'
+            );
+            setSelectedMenuLabel(
+                "selected-unselect-category",
+                'Unselect "' + category.name + '"'
+            );
         }
     }
 
     selectedItemsContextMenu.style.display = "block";
+
     const menuWidth = selectedItemsContextMenu.offsetWidth;
     const menuHeight = selectedItemsContextMenu.offsetHeight;
     const edgePadding = 8;
-    selectedItemsContextMenu.style.left = Math.min(x, Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)) + "px";
-    selectedItemsContextMenu.style.top = Math.min(y, Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)) + "px";
-}
 
+    selectedItemsContextMenu.style.left =
+        Math.min(
+            x,
+            Math.max(
+                edgePadding,
+                window.innerWidth - menuWidth - edgePadding
+            )
+        ) + "px";
+
+    selectedItemsContextMenu.style.top =
+        Math.min(
+            y,
+            Math.max(
+                edgePadding,
+                window.innerHeight - menuHeight - edgePadding
+            )
+        ) + "px";
+}
 function closeContextMenu() {
     contextMenu.style.display = "none";
     closeHomeContextMenu();
