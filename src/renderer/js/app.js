@@ -148,6 +148,12 @@ function getCategoryIds() {
     return launcherCategories.map((category) => Number(category.id));
 }
 
+function getCategoryItemIds(categoryId) {
+    return launcherItems
+        .filter((item) => Number(item.categoryId) === Number(categoryId))
+        .map((item) => Number(item.id));
+}
+
 function areAllScopeItemsSelected(scope, categoryId = null) {
     const ids = getScopeItemIds(scope, categoryId);
 
@@ -176,22 +182,70 @@ function toggleAllScopeItems(scope, categoryId = null) {
     }
 }
 
-function toggleAllCategories() {
-    const ids = getCategoryIds();
+function areAllCategoryItemsSelected(categoryId) {
+    const ids = getCategoryItemIds(categoryId);
 
     if (ids.length === 0) {
+        return true;
+    }
+
+    return ids.every((id) => selectionState.selectedItemIds.has(id));
+}
+
+function syncCategorySelectionState(categoryId) {
+    const id = Number(categoryId);
+
+    if (areAllCategoryItemsSelected(id)) {
+        selectionState.selectedCategoryIds.add(id);
+    } else {
+        selectionState.selectedCategoryIds.delete(id);
+    }
+}
+
+function toggleCategorySelectionWithItems(categoryId) {
+    const id = Number(categoryId);
+    const itemIds = getCategoryItemIds(id);
+    const categorySelected =
+        selectionState.selectedCategoryIds.has(id) &&
+        areAllCategoryItemsSelected(id);
+
+    if (categorySelected) {
+        selectionState.selectedCategoryIds.delete(id);
+        itemIds.forEach((itemId) =>
+            selectionState.selectedItemIds.delete(itemId)
+        );
+    } else {
+        selectionState.selectedCategoryIds.add(id);
+        itemIds.forEach((itemId) =>
+            selectionState.selectedItemIds.add(itemId)
+        );
+    }
+}
+
+function toggleAllCategories() {
+    const categoryIds = getCategoryIds();
+
+    if (categoryIds.length === 0) {
         return;
     }
 
-    const allSelected = ids.every((id) =>
-        selectionState.selectedCategoryIds.has(id)
+    const allSelected = categoryIds.every((id) =>
+        selectionState.selectedCategoryIds.has(id) &&
+        areAllCategoryItemsSelected(id)
     );
 
     if (allSelected) {
-        ids.forEach((id) => selectionState.selectedCategoryIds.delete(id));
-    } else {
-        ids.forEach((id) => selectionState.selectedCategoryIds.add(id));
+        selectionState.selectedCategoryIds.clear();
+        selectionState.selectedItemIds.clear();
+        return;
     }
+
+    categoryIds.forEach((id) => {
+        selectionState.selectedCategoryIds.add(id);
+        getCategoryItemIds(id).forEach((itemId) =>
+            selectionState.selectedItemIds.add(itemId)
+        );
+    });
 }
 
 function areAllCategoriesSelected() {
@@ -202,11 +256,24 @@ function areAllCategoriesSelected() {
     }
 
     return ids.every((id) =>
-        selectionState.selectedCategoryIds.has(id)
+        selectionState.selectedCategoryIds.has(id) &&
+        areAllCategoryItemsSelected(id)
     );
 }
 
+function syncCategorySelectionStates() {
+    if (selectionState.scope !== "categories") {
+        return;
+    }
+
+    getCategoryIds().forEach((categoryId) => {
+        syncCategorySelectionState(categoryId);
+    });
+}
+
 function syncSelectionUI() {
+    syncCategorySelectionStates();
+
     document.body.classList.toggle(
         "selection-mode",
         selectionState.active
@@ -283,18 +350,14 @@ function syncSelectionUI() {
 }
 
 function startSelection(scope, categoryId = null, initialItemId = null) {
-    enterSelectionMode(
-        scope,
-        categoryId,
-        scope === "categories" ? null : initialItemId
-    );
+    enterSelectionMode(scope, categoryId, initialItemId);
 
-    if (
-        scope === "categories" &&
-        initialItemId !== null &&
-        initialItemId !== undefined
-    ) {
-        selectionState.selectedCategoryIds.add(Number(initialItemId));
+    if (scope === "categories") {
+        if (categoryId !== null && categoryId !== undefined) {
+            selectionState.selectedItemIds.add(Number(initialItemId));
+        } else if (initialItemId !== null && initialItemId !== undefined) {
+            toggleCategorySelectionWithItems(initialItemId);
+        }
     }
 
     if (scope === "categories") {
@@ -1077,7 +1140,7 @@ function createCategoryCard(category) {
             return;
         }
 
-        toggleCategorySelection(category.id);
+        toggleCategorySelectionWithItems(category.id);
         syncSelectionUI();
     });
 
@@ -2644,11 +2707,15 @@ function createCard(item) {
     selectionCheckbox.addEventListener("click", (event) => {
         event.stopPropagation();
 
-        if (!selectionState.active || selectionState.scope === "categories") {
+        if (!selectionState.active) {
             return;
         }
 
         toggleItemSelection(item.id);
+
+        if (selectionState.scope === "categories") {
+            syncCategorySelectionState(item.categoryId);
+        }
         syncSelectionUI();
     });
 
@@ -2721,7 +2788,7 @@ function createCard(item) {
 
             if (item.categoryId !== undefined && item.categoryId !== null) {
                 startSelection(
-                    "category-items",
+                    "categories",
                     Number(item.categoryId),
                     item.id
                 );
@@ -2749,9 +2816,14 @@ function createCard(item) {
             return;
         }
 
-        if (selectionState.active && selectionState.scope !== "categories") {
+        if (selectionState.active) {
             event.preventDefault();
             toggleItemSelection(item.id);
+
+            if (selectionState.scope === "categories") {
+                syncCategorySelectionState(item.categoryId);
+            }
+
             syncSelectionUI();
             return;
         }
