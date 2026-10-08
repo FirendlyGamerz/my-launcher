@@ -1874,10 +1874,29 @@ if (selectedItemsContextMenu) {
         event.stopPropagation();
 
         const action = button.dataset.action;
+        const storedMenuCategoryId =
+            selectedItemsContextMenu.dataset.menuCategoryId;
+        const menuCategoryId =
+            storedMenuCategoryId === ""
+                ? null
+                : Number(storedMenuCategoryId);
+
         closeSelectedItemsContextMenu();
 
         if (action === "selected-open") {
             await openSelectedItems();
+        } else if (action === "selected-select-all-categories") {
+            selectAllCategoriesAction();
+        } else if (action === "selected-unselect-all-categories") {
+            unselectAllCategoriesAction();
+        } else if (action === "selected-select-category") {
+            selectSpecificCategoryAction(menuCategoryId);
+        } else if (action === "selected-unselect-category") {
+            unselectSpecificCategoryAction(menuCategoryId);
+        } else if (action === "selected-add-favorite") {
+            await applySelectedFavoriteAction("add");
+        } else if (action === "selected-remove-favorite") {
+            await applySelectedFavoriteAction("remove");
         } else if (action === "selected-remove-category") {
             await removeSelectedCategoryItems();
         } else if (action === "selected-delete") {
