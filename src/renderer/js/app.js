@@ -361,7 +361,12 @@ function startSelection(scope, categoryId = null, initialItemId = null) {
     enterSelectionMode(scope, categoryId, initialItemId);
 
     if (scope === "categories") {
-        if (categoryId !== null && categoryId !== undefined) {
+        if (
+            categoryId !== null &&
+            categoryId !== undefined &&
+            initialItemId !== null &&
+            initialItemId !== undefined
+        ) {
             selectionState.selectedItemIds.add(Number(initialItemId));
         } else if (initialItemId !== null && initialItemId !== undefined) {
             toggleCategorySelectionWithItems(initialItemId);
@@ -1845,6 +1850,7 @@ const sectionContextMenu = document.querySelector("#section-context-menu");
 const favoritesContextMenu = document.querySelector("#favorites-context-menu");
 const categoriesContextMenu = document.querySelector("#categories-context-menu");
 const categoryContextMenu = document.querySelector("#category-context-menu");
+const selectedItemsContextMenu = document.querySelector("#selected-items-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -1869,6 +1875,14 @@ if (categoryContextMenu && categoryContextMenu.parentElement !== document.body) 
 
 if (categoryContextMenu) {
     categoryContextMenu.style.zIndex = "10000";
+}
+
+if (selectedItemsContextMenu && selectedItemsContextMenu.parentElement !== document.body) {
+    document.body.appendChild(selectedItemsContextMenu);
+}
+
+if (selectedItemsContextMenu) {
+    selectedItemsContextMenu.style.zIndex = "10000";
 }
 
 const contextFavorite = document.querySelector("#context-favorite");
@@ -3113,6 +3127,10 @@ document.addEventListener("contextmenu", (event) => {
     if (target.type === "item") {
         if (selectionState.active) {
             closeContextMenu();
+            openSelectedItemsContextMenu(
+                event.clientX,
+                event.clientY
+            );
             return;
         }
 
@@ -3813,6 +3831,108 @@ function closeCategoryContextMenu() {
     }
 }
 
+function closeSelectedItemsContextMenu() {
+    if (selectedItemsContextMenu) {
+        selectedItemsContextMenu.style.display = "none";
+    }
+}
+
+function openSelectedItemsContextMenu(x, y) {
+    if (!selectedItemsContextMenu || !selectionState.active) {
+        return;
+    }
+
+    const selectedItemIds = getSelectedItemIds();
+    const selectedCategoryIds = getSelectedCategoryIds();
+    const isCategorySelection = selectionState.scope === "categories";
+    const isCategoryItemsSelection =
+        selectionState.scope === "category-items" ||
+        (isCategorySelection && selectionState.categoryId !== null);
+
+    if (isCategorySelection && !isCategoryItemsSelection) {
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-open"]')
+            ?.style.setProperty("display", "none");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-add-favorite"]')
+            ?.style.setProperty("display", "none");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-favorite"]')
+            ?.style.setProperty("display", "none");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-category"]')
+            ?.style.setProperty("display", "none");
+    } else if (isCategoryItemsSelection) {
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-open"]')
+            ?.style.setProperty("display", "flex");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-add-favorite"]')
+            ?.style.setProperty("display", "none");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-favorite"]')
+            ?.style.setProperty("display", "none");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-category"]')
+            ?.style.setProperty("display", "flex");
+    } else {
+        const selectedItems = launcherItems.filter(
+            (item) => selectedItemIds.includes(Number(item.id))
+        );
+        const allFavorite = selectedItems.length > 0 &&
+            selectedItems.every((item) => item.favorite === true);
+        const allNotFavorite = selectedItems.length > 0 &&
+            selectedItems.every((item) => item.favorite !== true);
+
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-open"]')
+            ?.style.setProperty("display", "flex");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-add-favorite"]')
+            ?.style.setProperty("display", allFavorite ? "none" : "flex");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-favorite"]')
+            ?.style.setProperty("display", allNotFavorite ? "none" : "flex");
+        selectedItemsContextMenu
+            .querySelector('[data-action="selected-remove-category"]')
+            ?.style.setProperty("display", "none");
+    }
+
+    const selectedOpen = selectedItemsContextMenu.querySelector('[data-action="selected-open"]');
+    const selectedDelete = selectedItemsContextMenu.querySelector('[data-action="selected-delete"]');
+    const separator = selectedItemsContextMenu.querySelector(".context-menu-separator");
+
+    if (selectedOpen) {
+        selectedOpen.style.display = isCategorySelection && !isCategoryItemsSelection
+            ? "none"
+            : "flex";
+    }
+
+    if (selectedDelete) {
+        selectedDelete.style.display = "flex";
+    }
+
+    if (separator) {
+        separator.style.display = "block";
+    }
+
+    selectedItemsContextMenu.style.display = "block";
+
+    const menuWidth = selectedItemsContextMenu.offsetWidth;
+    const menuHeight = selectedItemsContextMenu.offsetHeight;
+    const edgePadding = 8;
+
+    selectedItemsContextMenu.style.left = Math.min(
+        x,
+        Math.max(edgePadding, window.innerWidth - menuWidth - edgePadding)
+    ) + "px";
+
+    selectedItemsContextMenu.style.top = Math.min(
+        y,
+        Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)
+    ) + "px";
+}
+
 function openCategoryContextMenu(categoryId, x, y) {
     if (!categoryContextMenu) {
         return;
@@ -3917,6 +4037,7 @@ function openSectionContextMenu(type, x, y) {
 
 function closeContextMenu() {
     contextMenu.style.display = "none";
+    closeSelectedItemsContextMenu();
     closeHomeContextMenu();
     closeSectionContextMenu();
     closeFavoritesContextMenu();
@@ -4172,6 +4293,24 @@ if (sectionContextMenu) {
 
 
 
+
+
+if (selectedItemsContextMenu) {
+    selectedItemsContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !selectedItemsContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Step 11 only builds the selected-items menu.
+        // The actual actions are implemented in Steps 12-16.
+        closeSelectedItemsContextMenu();
+    });
+}
 
 
 contextMenu.addEventListener("click", async (event) => {
