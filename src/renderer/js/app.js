@@ -3450,18 +3450,10 @@ async function applySelectedFavoriteAction(action) {
         return;
     }
 
+    // Keep the existing selection state after the favorite update.
+    // renderItems() rebuilds the cards, and createCard() reads the
+    // preserved selectedItemIds to restore their checked state.
     renderItems();
-
-    const scopeIds = new Set(
-        getScopeItemIds(selectionState.scope).map(Number)
-    );
-
-    selectionState.selectedItemIds.forEach((id) => {
-        if (!scopeIds.has(Number(id))) {
-            selectionState.selectedItemIds.delete(Number(id));
-        }
-    });
-
     syncSelectionUI();
 }
 
