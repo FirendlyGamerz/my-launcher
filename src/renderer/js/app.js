@@ -1618,6 +1618,7 @@ const deleteCancel = document.querySelector("#delete-cancel");
 const deleteConfirm = document.querySelector("#delete-confirm");
 
 const contextMenu = document.querySelector("#context-menu");
+const homeContextMenu = document.querySelector("#home-context-menu");
 
 // The launcher shell uses overflow:hidden. Keep the context menu outside
 // that clipping container so it can appear at any position in the window.
@@ -2883,6 +2884,17 @@ document.addEventListener("contextmenu", (event) => {
         return;
     }
 
+    const activePage = document.querySelector(".page-section.active-page");
+
+    if (
+        target.type === "background" &&
+        activePage &&
+        activePage.id === "home-section"
+    ) {
+        openHomeContextMenu(event.clientX, event.clientY);
+        return;
+    }
+
     return;
 }, true);
 
@@ -3443,10 +3455,44 @@ function openContextMenu(item, x, y) {
     contextMenu.style.left = left + "px";
     contextMenu.style.top = top + "px";
 }
+function closeHomeContextMenu() {
+    if (homeContextMenu) {
+        homeContextMenu.style.display = "none";
+    }
+}
+
 function closeContextMenu() {
     contextMenu.style.display = "none";
+    closeHomeContextMenu();
     contextMenuItem = null;
     contextMenuTarget = null;
+}
+
+function openHomeContextMenu(x, y) {
+    if (!homeContextMenu) {
+        return;
+    }
+
+    homeContextMenu.style.display = "block";
+
+    const menuWidth = homeContextMenu.offsetWidth;
+    const menuHeight = homeContextMenu.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const edgePadding = 8;
+
+    const left = Math.min(
+        x,
+        Math.max(edgePadding, viewportWidth - menuWidth - edgePadding)
+    );
+
+    const top = Math.min(
+        y,
+        Math.max(edgePadding, viewportHeight - menuHeight - edgePadding)
+    );
+
+    homeContextMenu.style.left = left + "px";
+    homeContextMenu.style.top = top + "px";
 }
 
 function getContextTarget(event) {
@@ -3516,6 +3562,29 @@ document.addEventListener("keydown", (event) => {
     if (itemCategoriesDialog) itemCategoriesDialog.style.display = "none";
     if (categoryItemNameDialog) categoryItemNameDialog.style.display = "none";
 });
+
+if (homeContextMenu) {
+    homeContextMenu.addEventListener("click", (event) => {
+        const button = event.target.closest(".context-menu-item");
+
+        if (!button || !homeContextMenu.contains(button)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const action = button.dataset.action;
+        closeHomeContextMenu();
+
+        if (action === "home-add") {
+            openAddDialog();
+        } else if (action === "home-select") {
+            startSelection("home");
+        }
+    });
+}
+
 
 contextMenu.addEventListener("click", async (event) => {
     const button = event.target.closest(".context-menu-item");
