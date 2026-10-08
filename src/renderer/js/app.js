@@ -3419,6 +3419,9 @@ function selectSpecificCategoryAction(categoryId) {
         return;
     }
 
+    selectionState.selectedCategoryIds.clear();
+    selectionState.selectedItemIds.clear();
+
     selectionState.selectedCategoryIds.add(id);
     getCategoryItemIds(id).forEach((itemId) => {
         selectionState.selectedItemIds.add(Number(itemId));
@@ -4123,6 +4126,7 @@ function openSectionContextMenu(type, x, y) {
 function closeSelectedItemsContextMenu() {
     if (selectedItemsContextMenu) {
         selectedItemsContextMenu.style.display = "none";
+        selectedItemsContextMenu.dataset.menuCategoryId = "";
     }
     selectedMenuCategoryId = null;
 }
@@ -4149,6 +4153,9 @@ function openSelectedItemsContextMenu(x, y) {
             : null;
     const isSpecificCategory = isCategorySelection && menuCategoryId !== null;
     const isNormalItemSelection = !isCategorySelection;
+
+    selectedItemsContextMenu.dataset.menuCategoryId =
+        menuCategoryId === null ? "" : String(menuCategoryId);
 
     setSelectedMenuAction("selected-open", true);
 
@@ -4530,7 +4537,12 @@ if (selectedItemsContextMenu) {
         event.stopPropagation();
 
         const action = button.dataset.action;
-        const menuCategoryId = selectedMenuCategoryId;
+        const storedMenuCategoryId =
+            selectedItemsContextMenu.dataset.menuCategoryId;
+        const menuCategoryId =
+            storedMenuCategoryId === ""
+                ? null
+                : Number(storedMenuCategoryId);
         closeSelectedItemsContextMenu();
 
         if (action === "selected-open") {
