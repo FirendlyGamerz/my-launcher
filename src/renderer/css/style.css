@@ -2999,8 +2999,8 @@ input:checked+.slider:before {
 }
 
 .favorites-picker-checkbox:checked {
-    background: var(--bg-button-hover);
-    border-color: var(--border-focus);
+    background: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .favorites-picker-checkbox:checked::after {
