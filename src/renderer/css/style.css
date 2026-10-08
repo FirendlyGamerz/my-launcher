@@ -690,7 +690,7 @@ body {
 }
 
 .selection-mode[data-selection-scope="categories"] .card-selection-checkbox {
-    display: none;
+    display: inline-grid;
 }
 
 .category-selection-checkbox,
