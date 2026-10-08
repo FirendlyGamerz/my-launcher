@@ -5,6 +5,7 @@ let pendingCategoryId = null;
 let editingCategoryId = null;
 let deleteTargetCategory = null;
 let deleteTargetSelection = null;
+let selectedMenuCategoryId = null;
 
 const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
 
@@ -1877,6 +1878,8 @@ if (selectedItemsContextMenu) {
 
         if (action === "selected-open") {
             await openSelectedItems();
+        } else if (action === "selected-remove-category") {
+            await removeSelectedCategoryItems();
         } else if (action === "selected-delete") {
             openSelectedDeleteDialog();
         }
@@ -3144,14 +3147,11 @@ document.addEventListener("contextmenu", (event) => {
 
     if (target.type === "item") {
         if (selectionState.active) {
-            if (
+            selectedMenuCategoryId =
                 target.item.categoryId !== undefined &&
                 target.item.categoryId !== null
-            ) {
-                selectionState.categoryId = Number(target.item.categoryId);
-            } else {
-                selectionState.categoryId = null;
-            }
+                    ? Number(target.item.categoryId)
+                    : null;
 
             closeContextMenu();
             openSelectedItemsContextMenu(event.clientX, event.clientY);
@@ -3172,7 +3172,7 @@ document.addEventListener("contextmenu", (event) => {
             activePage.id === "categories-section"
         ) {
             if (selectionState.active) {
-                selectionState.categoryId = Number(target.categoryId);
+                selectedMenuCategoryId = Number(target.categoryId);
                 closeContextMenu();
                 openSelectedItemsContextMenu(event.clientX, event.clientY);
                 return;
@@ -3222,7 +3222,7 @@ document.addEventListener("contextmenu", (event) => {
         activePage.id === "categories-section"
     ) {
         if (selectionState.active) {
-            selectionState.categoryId = null;
+            selectedMenuCategoryId = null;
             closeContextMenu();
             openSelectedItemsContextMenu(event.clientX, event.clientY);
             return;
@@ -4002,6 +4002,7 @@ function closeSelectedItemsContextMenu() {
     if (selectedItemsContextMenu) {
         selectedItemsContextMenu.style.display = "none";
     }
+    selectedMenuCategoryId = null;
 }
 
 function setSelectedMenuAction(action, visible) {
@@ -4018,10 +4019,13 @@ function openSelectedItemsContextMenu(x, y) {
     if (!selectedItemsContextMenu || !selectionState.active) return;
 
     const isCategorySelection = selectionState.scope === "categories";
-    const isSpecificCategory =
+    const menuCategoryId =
         isCategorySelection &&
-        selectionState.categoryId !== null &&
-        selectionState.categoryId !== undefined;
+        selectedMenuCategoryId !== null &&
+        selectedMenuCategoryId !== undefined
+            ? Number(selectedMenuCategoryId)
+            : null;
+    const isSpecificCategory = isCategorySelection && menuCategoryId !== null;
     const isNormalItemSelection = !isCategorySelection;
 
     setSelectedMenuAction("selected-open", true);
@@ -4093,7 +4097,7 @@ function openSelectedItemsContextMenu(x, y) {
     if (isSpecificCategory) {
         const category = launcherCategories.find(
             (entry) =>
-                Number(entry.id) === Number(selectionState.categoryId)
+                Number(entry.id) === Number(menuCategoryId)
         );
 
         if (category) {
@@ -4541,6 +4545,42 @@ function getSelectedDeleteConfirmation() {
         title: "Delete Selected Items?",
         message: messages[selectionState.scope] || "Do you want to delete selected launchers?"
     };
+}
+
+async function removeSelectedCategoryItems() {
+    if (!selectionState.active || selectionState.scope !== "categories") {
+        return;
+    }
+
+    const selectedItemIds = new Set(
+        [...selectionState.selectedItemIds].map(Number)
+    );
+
+    if (selectedItemIds.size === 0) {
+        return;
+    }
+
+    const oldItems = [...launcherItems];
+
+    launcherItems = launcherItems.filter(
+        (item) => !selectedItemIds.has(Number(item.id))
+    );
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Remove Failed",
+            "The selected items could not be removed from their categories."
+        );
+        return;
+    }
+
+    clearSelection();
+    renderItems();
+    renderCategories();
+    syncSelectionUI();
 }
 
 function openSelectedDeleteDialog() {
