@@ -1225,6 +1225,25 @@ function createCategoryCard(category) {
 
     sectionHeader.appendChild(titleWrap);
 
+    sectionHeader.addEventListener("click", (event) => {
+        if (event.target.closest("button, input")) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!selectionState.active) {
+            startSelection("categories", null, category.id);
+            return;
+        }
+
+        if (selectionState.scope === "categories") {
+            toggleCategorySelectionWithItems(category.id);
+            syncSelectionUI();
+        }
+    });
+
     let longPressTimer = null;
     let longPressTriggered = false;
 
