@@ -8,6 +8,7 @@ let deleteTargetCategory = null;
 const CATEGORIES_STORAGE_KEY = "my_launcher_categories";
 
 let contextMenuItem = null;
+let contextMenuTarget = null;
 
 /* ==============================
    Selection State
@@ -2859,16 +2860,24 @@ function createCard(item) {
 ================================= */
 
 document.addEventListener("contextmenu", (event) => {
-    const card = event.target.closest(".app-card");
-    if (!card) return;
-
-    const itemId = Number(card.dataset.itemId);
-    const item = launcherItems.find((entry) => Number(entry.id) === itemId);
-    if (!item) return;
+    const target = getContextTarget(event);
+    contextMenuTarget = target;
 
     event.preventDefault();
     event.stopPropagation();
-    openContextMenu(item, event.clientX, event.clientY);
+
+    if (target.type === "item") {
+        openContextMenu(target.item, event.clientX, event.clientY);
+        return;
+    }
+
+    closeContextMenu();
+
+    if (target.type === "category") {
+        return;
+    }
+
+    return;
 }, true);
 
 
@@ -3354,6 +3363,10 @@ if (saveItemCategories) {
 ================================= */
 
 function openContextMenu(item, x, y) {
+    contextMenuTarget = {
+        type: "item",
+        itemId: Number(item.id)
+    };
     contextMenuItem = item;
 
     const isCategoryItem =
@@ -3427,6 +3440,47 @@ function openContextMenu(item, x, y) {
 function closeContextMenu() {
     contextMenu.style.display = "none";
     contextMenuItem = null;
+    contextMenuTarget = null;
+}
+
+function getContextTarget(event) {
+    const card = event.target.closest(".app-card");
+
+    if (card) {
+        const itemId = Number(card.dataset.itemId);
+        const item = launcherItems.find(
+            (entry) => Number(entry.id) === itemId
+        );
+
+        if (item) {
+            return {
+                type: "item",
+                itemId,
+                item
+            };
+        }
+    }
+
+    const categoryCard = event.target.closest(".category-card");
+
+    if (categoryCard) {
+        const categoryId = Number(categoryCard.dataset.categoryId);
+        const category = launcherCategories.find(
+            (entry) => Number(entry.id) === categoryId
+        );
+
+        if (category) {
+            return {
+                type: "category",
+                categoryId,
+                category
+            };
+        }
+    }
+
+    return {
+        type: "background"
+    };
 }
 
 document.addEventListener("click", (event) => {
