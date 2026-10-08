@@ -1684,6 +1684,7 @@ function showPage(pageName) {
     });
 
     closeContextMenu();
+    syncSelectionUI();
 }
 
 navItems.forEach((item) => {
@@ -2867,6 +2868,11 @@ document.addEventListener("contextmenu", (event) => {
     event.stopPropagation();
 
     if (target.type === "item") {
+        if (selectionState.active && isItemSelected(target.itemId)) {
+            closeContextMenu();
+            return;
+        }
+
         openContextMenu(target.item, event.clientX, event.clientY);
         return;
     }
