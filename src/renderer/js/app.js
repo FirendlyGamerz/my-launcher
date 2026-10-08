@@ -1696,6 +1696,7 @@ function createCategory() {
     );
 
     if (duplicate) {
+        closeCategoryDialogDialog();
         showMessage("Already Exists", '"' + name + '" is already an existing category.');
         return;
     }
@@ -3437,9 +3438,6 @@ function selectSpecificCategoryAction(categoryId) {
     if (!launcherCategories.some((category) => Number(category.id) === id)) {
         return;
     }
-
-    selectionState.selectedCategoryIds.clear();
-    selectionState.selectedItemIds.clear();
 
     selectionState.selectedCategoryIds.add(id);
     getCategoryItemIds(id).forEach((itemId) => {
