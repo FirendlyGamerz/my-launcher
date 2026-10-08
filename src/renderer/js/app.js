@@ -2899,6 +2899,10 @@ document.addEventListener("contextmenu", (event) => {
         activePage &&
         activePage.id === "home-section"
     ) {
+        if (selectionState.active) {
+            return;
+        }
+
         openHomeContextMenu(event.clientX, event.clientY);
         return;
     }
