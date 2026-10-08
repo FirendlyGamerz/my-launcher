@@ -868,6 +868,8 @@ const favoritesPickerSearch = document.querySelector("#favorites-picker-search")
 const favoritesPickerList = document.querySelector("#favorites-picker-list");
 const favoritesPickerTitle = document.querySelector("#favorites-picker-title");
 const favoritesPickerSubmit = document.querySelector("#favorites-picker-submit");
+const favoritesPickerResultCount = document.querySelector("#favorites-picker-result-count");
+const favoritesPickerSelectedCount = document.querySelector("#favorites-picker-selected-count");
 
 let favoritesPickerMode = "add";
 let favoritesPickerSelectedIds = new Set();
@@ -1122,6 +1124,23 @@ function closeFavoritesPickerDialog() {
     }
 }
 
+function updateFavoritesPickerMeta(resultCount) {
+    if (favoritesPickerResultCount) {
+        favoritesPickerResultCount.textContent =
+            resultCount + (resultCount === 1 ? " item" : " items");
+    }
+
+    if (favoritesPickerSelectedCount) {
+        const count = favoritesPickerSelectedIds.size;
+        favoritesPickerSelectedCount.textContent =
+            count + (count === 1 ? " selected" : " selected");
+    }
+
+    if (favoritesPickerSubmit) {
+        favoritesPickerSubmit.disabled = favoritesPickerSelectedIds.size === 0;
+    }
+}
+
 function renderFavoritesPicker() {
     if (!favoritesPickerList) return;
 
@@ -1148,6 +1167,8 @@ function renderFavoritesPicker() {
             target.includes(query);
     });
 
+    updateFavoritesPickerMeta(filteredItems.length);
+
     if (filteredItems.length === 0) {
         const empty = document.createElement("div");
         empty.className = "launcher-picker-empty";
@@ -1162,7 +1183,7 @@ function renderFavoritesPicker() {
 
     filteredItems.forEach((item) => {
         const row = document.createElement("label");
-        row.className = "favorites-picker-item launcher-picker-item";
+        row.className = "favorites-picker-item";
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
@@ -1175,6 +1196,7 @@ function renderFavoritesPicker() {
             } else {
                 favoritesPickerSelectedIds.delete(id);
             }
+            updateFavoritesPickerMeta(filteredItems.length);
         });
 
         const icon = document.createElement("div");
@@ -1212,11 +1234,10 @@ async function applyFavoritesPicker() {
     const selectedIds = [...favoritesPickerSelectedIds];
 
     if (selectedIds.length === 0) {
-        closeFavoritesPickerDialog();
         return;
     }
 
-    const oldItems = [...launcherItems];
+    const oldItems = launcherItems.map((item) => ({ ...item }));
 
     launcherItems.forEach((item) => {
         if (selectedIds.includes(Number(item.id))) {
@@ -1240,6 +1261,7 @@ async function applyFavoritesPicker() {
     closeFavoritesPickerDialog();
     renderItems();
 }
+
 
 if (closeFavoritesPicker) {
     closeFavoritesPicker.addEventListener("click", closeFavoritesPickerDialog);
