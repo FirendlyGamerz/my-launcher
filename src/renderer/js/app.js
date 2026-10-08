@@ -3126,6 +3126,11 @@ document.addEventListener("contextmenu", (event) => {
 
     if (target.type === "item") {
         if (selectionState.active) {
+            if (!isItemSelected(target.item.id)) {
+                closeContextMenu();
+                return;
+            }
+
             closeContextMenu();
             openSelectedItemsContextMenu(
                 event.clientX,
@@ -3148,6 +3153,14 @@ document.addEventListener("contextmenu", (event) => {
             activePage.id === "categories-section"
         ) {
             if (selectionState.active) {
+                if (!isCategorySelected(target.categoryId)) {
+                    return;
+                }
+
+                openSelectedItemsContextMenu(
+                    event.clientX,
+                    event.clientY
+                );
                 return;
             }
 
@@ -3837,86 +3850,345 @@ function closeSelectedItemsContextMenu() {
     }
 }
 
+function setSelectedMenuAction(action, visible) {
+    const button = selectedItemsContextMenu?.querySelector(
+        '[data-action="' + action + '"]'
+    );
+
+    if (button) {
+        button.style.display = visible ? "flex" : "none";
+    }
+}
+
+function setSelectedMenuLabel(action, text) {
+    const button = selectedItemsContextMenu?.querySelector(
+        '[data-action="' + action + '"] span'
+    );
+
+    if (button) {
+        button.textContent = text;
+    }
+}
+
+function getSelectionItemsForOpening() {
+    return launcherItems.filter((item) =>
+        selectionState.selectedItemIds.has(Number(item.id))
+    );
+}
+
+function getUniqueSelectedItemsForOpening() {
+    const unique = [];
+    const seen = new Set();
+
+    getSelectionItemsForOpening().forEach((item) => {
+        const key = String(item.type || "") + "\u0000" + String(item.target || "");
+
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        unique.push(item);
+    });
+
+    return unique;
+}
+
+async function openSelectedItems() {
+    const items = getUniqueSelectedItemsForOpening();
+
+    if (items.length > 15) {
+        showMessage(
+            "Too Many Launchers",
+            "You can only select up to 15 launchers to open at once."
+        );
+        return;
+    }
+
+    for (const item of items) {
+        await openItem(item);
+    }
+}
+
+function getSelectedItemScopeIds() {
+    if (selectionState.scope === "category-items") {
+        return getScopeItemIds(
+            "category-items",
+            selectionState.categoryId
+        );
+    }
+
+    if (
+        selectionState.scope === "categories" &&
+        selectionState.categoryId !== null
+    ) {
+        return getCategoryItemIds(selectionState.categoryId);
+    }
+
+    return getScopeItemIds(selectionState.scope);
+}
+
+function selectAllSelectedMenuItems() {
+    getSelectedItemScopeIds().forEach((id) =>
+        selectionState.selectedItemIds.add(id)
+    );
+}
+
+function unselectAllSelectedMenuItems() {
+    getSelectedItemScopeIds().forEach((id) =>
+        selectionState.selectedItemIds.delete(id)
+    );
+}
+
+async function applySelectedFavoriteAction(favorite) {
+    const ids = getSelectedItemIds();
+    const selectedItems = launcherItems.filter((item) =>
+        ids.includes(Number(item.id))
+    );
+
+    if (selectedItems.length === 0) {
+        return;
+    }
+
+    const oldItems = launcherItems.map((item) => ({ ...item }));
+
+    selectedItems.forEach((item) => {
+        item.favorite = favorite;
+        if (!isCategoryCopy(item)) {
+            syncOriginalItemToCategoryCopies(item);
+        }
+    });
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Save Failed",
+            favorite
+                ? "The selected favorites could not be saved."
+                : "The selected favorites could not be removed."
+        );
+        return;
+    }
+
+    renderItems();
+}
+
+async function removeSelectedItemsFromCategories() {
+    const ids = new Set(getSelectedItemIds());
+    const oldItems = [...launcherItems];
+
+    launcherItems = launcherItems.filter((item) => {
+        const isCategoryCopy =
+            item.categoryId !== undefined &&
+            item.categoryId !== null;
+
+        return !isCategoryCopy || !ids.has(Number(item.id));
+    });
+
+    const saved = await saveLauncherItems(launcherItems);
+
+    if (!saved) {
+        launcherItems = oldItems;
+        showMessage(
+            "Remove Failed",
+            "The selected items could not be removed from their categories."
+        );
+        return false;
+    }
+
+    return true;
+}
+
+async function deleteSelectedItemsAndCategories() {
+    const selectedItemIds = new Set(getSelectedItemIds());
+    const selectedCategoryIds = new Set(getSelectedCategoryIds());
+
+    const categoryIdsToDelete =
+        selectionState.scope === "categories"
+            ? selectedCategoryIds
+            : new Set();
+
+    const hasCategories = categoryIdsToDelete.size > 0;
+    const hasItems = selectedItemIds.size > 0;
+
+    if (!hasCategories && !hasItems) {
+        return;
+    }
+
+    let confirmationMessage = "Do you want to delete selected items?";
+
+    if (selectionState.scope === "categories" && hasCategories) {
+        confirmationMessage = "Do you want to delete selected categories?";
+    } else if (selectionState.scope === "home") {
+        confirmationMessage = "Do you want to delete selected launchers?";
+    } else if (selectionState.scope === "websites") {
+        confirmationMessage = "Do you want to delete selected websites?";
+    } else if (selectionState.scope === "webapps") {
+        confirmationMessage = "Do you want to delete selected web apps?";
+    } else if (selectionState.scope === "applications") {
+        confirmationMessage = "Do you want to delete selected applications?";
+    }
+
+    if (!window.confirm(confirmationMessage)) {
+        return;
+    }
+
+    const oldCategories = [...launcherCategories];
+    const oldItems = [...launcherItems];
+
+    if (hasCategories) {
+        launcherCategories = launcherCategories.filter(
+            (category) => !categoryIdsToDelete.has(Number(category.id))
+        );
+    }
+
+    launcherItems = launcherItems.filter((item) => {
+        const itemCategoryId =
+            item.categoryId === undefined || item.categoryId === null
+                ? null
+                : Number(item.categoryId);
+
+        if (
+            itemCategoryId !== null &&
+            categoryIdsToDelete.has(itemCategoryId)
+        ) {
+            return false;
+        }
+
+        if (
+            itemCategoryId !== null &&
+            selectedItemIds.has(Number(item.id))
+        ) {
+            return false;
+        }
+
+        return true;
+    });
+
+    const categoriesSaved = hasCategories
+        ? saveLauncherCategories()
+        : true;
+    const itemsSaved = categoriesSaved
+        ? await saveLauncherItems(launcherItems)
+        : false;
+
+    if (!categoriesSaved || !itemsSaved) {
+        launcherCategories = oldCategories;
+        launcherItems = oldItems;
+
+        if (hasCategories) {
+            saveLauncherCategories();
+        }
+        await saveLauncherItems(launcherItems);
+
+        showMessage(
+            "Delete Failed",
+            "The selected items could not be deleted."
+        );
+        return;
+    }
+
+    clearSelection();
+    refreshAllAddCategoryControls();
+    renderItems();
+    renderCategories();
+    syncSelectionUI();
+}
+
 function openSelectedItemsContextMenu(x, y) {
     if (!selectedItemsContextMenu || !selectionState.active) {
         return;
     }
 
-    const selectedItemIds = getSelectedItemIds();
-    const selectedCategoryIds = getSelectedCategoryIds();
     const isCategorySelection = selectionState.scope === "categories";
+    const isSpecificCategory =
+        selectionState.categoryId !== null &&
+        selectionState.categoryId !== undefined;
+
     const isCategoryItemsSelection =
         selectionState.scope === "category-items" ||
-        (isCategorySelection && selectionState.categoryId !== null);
+        (isCategorySelection && isSpecificCategory);
 
-    if (isCategorySelection && !isCategoryItemsSelection) {
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-open"]')
-            ?.style.setProperty("display", "none");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-add-favorite"]')
-            ?.style.setProperty("display", "none");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-favorite"]')
-            ?.style.setProperty("display", "none");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-category"]')
-            ?.style.setProperty("display", "none");
-    } else if (isCategoryItemsSelection) {
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-open"]')
-            ?.style.setProperty("display", "flex");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-add-favorite"]')
-            ?.style.setProperty("display", "none");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-favorite"]')
-            ?.style.setProperty("display", "none");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-category"]')
-            ?.style.setProperty("display", "flex");
-    } else {
-        const selectedItems = launcherItems.filter(
-            (item) => selectedItemIds.includes(Number(item.id))
+    const isNormalItemSelection =
+        !isCategorySelection && !isCategoryItemsSelection;
+
+    setSelectedMenuAction(
+        "selected-open",
+        !isCategorySelection || isCategoryItemsSelection
+    );
+    setSelectedMenuAction("selected-select-all", isNormalItemSelection);
+    setSelectedMenuAction("selected-unselect-all", isNormalItemSelection);
+
+    setSelectedMenuAction(
+        "selected-select-all-categories",
+        isCategorySelection && !isSpecificCategory
+    );
+    setSelectedMenuAction(
+        "selected-unselect-all-categories",
+        isCategorySelection && !isSpecificCategory
+    );
+
+    setSelectedMenuAction(
+        "selected-select-category",
+        isCategoryItemsSelection
+    );
+    setSelectedMenuAction(
+        "selected-unselect-category",
+        isCategoryItemsSelection
+    );
+
+    const selectedItems = launcherItems.filter((item) =>
+        getSelectedItemIds().includes(Number(item.id))
+    );
+
+    const allFavorite =
+        selectedItems.length > 0 &&
+        selectedItems.every((item) => item.favorite === true);
+
+    const allNotFavorite =
+        selectedItems.length > 0 &&
+        selectedItems.every((item) => item.favorite !== true);
+
+    setSelectedMenuAction(
+        "selected-add-favorite",
+        isNormalItemSelection && !allFavorite
+    );
+    setSelectedMenuAction(
+        "selected-remove-favorite",
+        isNormalItemSelection && !allNotFavorite
+    );
+    setSelectedMenuAction(
+        "selected-remove-category",
+        isCategorySelection
+    );
+    setSelectedMenuAction("selected-delete", true);
+
+    const category = isSpecificCategory
+        ? launcherCategories.find(
+            (entry) =>
+                Number(entry.id) === Number(selectionState.categoryId)
+        )
+        : null;
+
+    if (category) {
+        setSelectedMenuLabel(
+            "selected-select-category",
+            'Select "' + category.name + '"'
         );
-        const allFavorite = selectedItems.length > 0 &&
-            selectedItems.every((item) => item.favorite === true);
-        const allNotFavorite = selectedItems.length > 0 &&
-            selectedItems.every((item) => item.favorite !== true);
-
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-open"]')
-            ?.style.setProperty("display", "flex");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-add-favorite"]')
-            ?.style.setProperty("display", allFavorite ? "none" : "flex");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-favorite"]')
-            ?.style.setProperty("display", allNotFavorite ? "none" : "flex");
-        selectedItemsContextMenu
-            .querySelector('[data-action="selected-remove-category"]')
-            ?.style.setProperty("display", "none");
+        setSelectedMenuLabel(
+            "selected-unselect-category",
+            'Unselect "' + category.name + '"'
+        );
     }
 
-    const selectedOpen = selectedItemsContextMenu.querySelector('[data-action="selected-open"]');
-    const selectedDelete = selectedItemsContextMenu.querySelector('[data-action="selected-delete"]');
-    const separator = selectedItemsContextMenu.querySelector(".context-menu-separator");
-
-    if (selectedOpen) {
-        selectedOpen.style.display = isCategorySelection && !isCategoryItemsSelection
-            ? "none"
-            : "flex";
-    }
-
-    if (selectedDelete) {
-        selectedDelete.style.display = "flex";
-    }
+    const separator = selectedItemsContextMenu.querySelector(
+        ".context-menu-separator"
+    );
 
     if (separator) {
-        separator.style.display =
-            isCategorySelection && !isCategoryItemsSelection
-                ? "none"
-                : "block";
+        separator.style.display = "block";
     }
 
     selectedItemsContextMenu.style.display = "block";
@@ -3935,7 +4207,6 @@ function openSelectedItemsContextMenu(x, y) {
         Math.max(edgePadding, window.innerHeight - menuHeight - edgePadding)
     ) + "px";
 }
-
 function openCategoryContextMenu(categoryId, x, y) {
     if (!categoryContextMenu) {
         return;
@@ -4299,21 +4570,120 @@ if (sectionContextMenu) {
 
 
 if (selectedItemsContextMenu) {
-    selectedItemsContextMenu.addEventListener("click", (event) => {
-        const button = event.target.closest(".context-menu-item");
+    selectedItemsContextMenu.addEventListener("click", async (event) => {
+    const button = event.target.closest(".context-menu-item");
 
-        if (!button || !selectedItemsContextMenu.contains(button)) {
-            return;
+    if (!button || !selectedItemsContextMenu.contains(button)) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const action = button.dataset.action;
+    closeSelectedItemsContextMenu();
+
+    if (action === "selected-open") {
+        await openSelectedItems();
+        return;
+    }
+
+    if (action === "selected-select-all") {
+        selectAllSelectedMenuItems();
+        renderItems();
+        syncSelectionUI();
+        return;
+    }
+
+    if (action === "selected-unselect-all") {
+        unselectAllSelectedMenuItems();
+        renderItems();
+        syncSelectionUI();
+        return;
+    }
+
+    if (action === "selected-select-all-categories") {
+        const categoryIds = getCategoryIds();
+
+        selectionState.selectedCategoryIds.clear();
+        selectionState.selectedItemIds.clear();
+
+        categoryIds.forEach((categoryId) => {
+            selectionState.selectedCategoryIds.add(categoryId);
+            getCategoryItemIds(categoryId).forEach((itemId) =>
+                selectionState.selectedItemIds.add(itemId)
+            );
+        });
+
+        renderCategories();
+        syncSelectionUI();
+        return;
+    }
+
+    if (action === "selected-unselect-all-categories") {
+        selectionState.selectedCategoryIds.clear();
+        selectionState.selectedItemIds.clear();
+        renderCategories();
+        syncSelectionUI();
+        return;
+    }
+
+    if (action === "selected-select-category") {
+        if (selectionState.categoryId !== null) {
+            const categoryId = Number(selectionState.categoryId);
+
+            selectionState.selectedCategoryIds.add(categoryId);
+            getCategoryItemIds(categoryId).forEach((itemId) =>
+                selectionState.selectedItemIds.add(itemId)
+            );
+
+            renderCategories();
+            syncSelectionUI();
         }
+        return;
+    }
 
-        event.preventDefault();
-        event.stopPropagation();
+    if (action === "selected-unselect-category") {
+        if (selectionState.categoryId !== null) {
+            const categoryId = Number(selectionState.categoryId);
 
-        // Step 11 only builds the selected-items menu.
-        // The actual actions are implemented in Steps 12-16.
-        closeSelectedItemsContextMenu();
-    });
-}
+            selectionState.selectedCategoryIds.delete(categoryId);
+            getCategoryItemIds(categoryId).forEach((itemId) =>
+                selectionState.selectedItemIds.delete(itemId)
+            );
+
+            renderCategories();
+            syncSelectionUI();
+        }
+        return;
+    }
+
+    if (action === "selected-add-favorite") {
+        await applySelectedFavoriteAction(true);
+        return;
+    }
+
+    if (action === "selected-remove-favorite") {
+        await applySelectedFavoriteAction(false);
+        return;
+    }
+
+    if (action === "selected-remove-category") {
+        const saved = await removeSelectedItemsFromCategories();
+
+        if (saved) {
+            clearSelection();
+            renderItems();
+            renderCategories();
+            syncSelectionUI();
+        }
+        return;
+    }
+
+    if (action === "selected-delete") {
+        await deleteSelectedItemsAndCategories();
+    }
+});
 
 
 contextMenu.addEventListener("click", async (event) => {
