@@ -4808,9 +4808,34 @@ deleteConfirm.addEventListener("click", async () => {
             target.categoryId !== null &&
             target.categoryId !== undefined) {
             const selectedItemIds = new Set(target.itemIds.map(Number));
-            launcherItems = launcherItems.filter(
-                (item) => !selectedItemIds.has(Number(item.id))
-            );
+            const deletedSourceIds = new Set();
+
+            launcherItems.forEach((item) => {
+                if (!selectedItemIds.has(Number(item.id))) {
+                    return;
+                }
+
+                const sourceId = item.sourceItemId;
+                if (sourceId !== undefined && sourceId !== null) {
+                    deletedSourceIds.add(Number(sourceId));
+                } else {
+                    deletedSourceIds.add(Number(item.id));
+                }
+            });
+
+            launcherItems = launcherItems.filter((item) => {
+                const itemId = Number(item.id);
+                const sourceId =
+                    item.sourceItemId === undefined || item.sourceItemId === null
+                        ? null
+                        : Number(item.sourceItemId);
+
+                return (
+                    !selectedItemIds.has(itemId) &&
+                    !deletedSourceIds.has(itemId) &&
+                    (sourceId === null || !deletedSourceIds.has(sourceId))
+                );
+            });
         } else if (target.scope === "categories") {
             const selectedCategoryIds = new Set(target.categoryIds.map(Number));
             const selectedItemIds = new Set(target.itemIds.map(Number));
