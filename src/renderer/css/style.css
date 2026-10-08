@@ -2767,6 +2767,18 @@ input:checked+.slider:before {
     border-color: var(--border-color);
 }
 
+.favorites-picker-item {
+    cursor: pointer;
+}
+
+.favorites-picker-checkbox {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    margin: 0 2px 0 0;
+    accent-color: var(--accent-color);
+}
+
 .launcher-picker-icon {
     width: 36px;
     height: 36px;
